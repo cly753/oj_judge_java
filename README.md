@@ -1,1 +1,3 @@
-```oj_judge_java```
+```
+oj_judge_java
+```
