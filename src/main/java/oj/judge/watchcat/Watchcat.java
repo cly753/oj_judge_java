@@ -4,7 +4,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
 
-public class Watchcat extends Thread {
+import oj.judge.center.IWatchcat;
+
+public class Watchcat extends Thread implements IWatchcat {
 	public Date lastTime;
 	public Long timeOut;
 	public Long times;
