@@ -4,4 +4,16 @@
   <artifactId>oj-judge</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>oj-judge</name>
+  <dependencies>
+  	<dependency>
+  		<groupId>javax</groupId>
+  		<artifactId>javaee-api</artifactId>
+  		<version>7.0</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>commons-io</groupId>
+  		<artifactId>commons-io</artifactId>
+  		<version>2.4</version>
+  	</dependency>
+  </dependencies>
 </project>
