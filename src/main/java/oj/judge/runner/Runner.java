@@ -55,16 +55,18 @@ public class Runner implements IRunner {
 		return false;
 	}
 	
-	public void event(String e) {
-		List<Listener> l = listeners.get(e);
-		if (l != null) for (Listener li : l)
-			li.doAction();
-	}
-	public void event(String e, Listener li) {
-		List<Listener> l = listeners.get(e);
-		if (l == null) l = new ArrayList<Listener>();
-		l.add(li);
-	}
+	// TODO
+	// http://www.giocc.com/writing-an-event-driven-framework-with-java.html
+//	public void event(String e) {
+//		List<Listener> l = listeners.get(e);
+//		if (l != null) for (Listener li : l)
+//			li.doAction();
+//	}
+//	public void event(String e, Listener li) {
+//		List<Listener> l = listeners.get(e);
+//		if (l == null) l = new ArrayList<Listener>();
+//		l.add(li);
+//	}
 	
 	//
 	// TODO
