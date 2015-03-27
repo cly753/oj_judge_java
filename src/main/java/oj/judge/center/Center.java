@@ -20,13 +20,15 @@ public class Center extends Thread {
 	public void run() {
         String path = "C:/Users/" + System.getProperty("user.name") + "/Desktop"; // for testing
 
-        IRunner ir = new Runner(0);
-        ir.judge(Paths.get(path), new Solution(new Problem()), new Checker(), new Callback() {
+        Runner runner = new Runner(0, Paths.get(path), new Solution(new Problem()), new Checker());
+        runner.reg(Runner.E.FINISH, new Callback() {
             @Override
             public void call() {
                 System.out.println(label + "Callback hello world");
             }
         });
+        
+        runner.start();
         System.out.println("Waiting for result...");
 	}
 }

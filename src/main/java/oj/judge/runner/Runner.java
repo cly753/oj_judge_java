@@ -19,12 +19,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import oj.judge.center.IChecker;
-import oj.judge.center.IRunner;
 import oj.judge.common.Callback;
 import oj.judge.common.Solution;
 
-public class Runner implements IRunner, Runnable {
+public class Runner extends Thread {
 	private static final String label = "Runner::";
 	
 	public enum E { ERROR, FINISH };
@@ -47,23 +45,7 @@ public class Runner implements IRunner, Runnable {
 
 		emit(E.FINISH);
 	}
-
-	@Override
-	public void judge(Path runningPath, Solution solution, IChecker checker, Callback callback) {
-		this.runningPath = runningPath;
-		this.inputFile   = Paths.get(runningPath + "/" + "in");
-		this.outputFile  = Paths.get(runningPath + "/" + "out");
-		this.errorFile   = Paths.get(runningPath + "/" + "error");
-		
-		this.solution    = solution;
-		this.checker     = checker;
-
-		listener.put(E.FINISH, callback);
-				
-		me = new Thread(this);
-		me.start();
-	}
-
+	
 	public Integer id;
 	public Solution solution;
 	
@@ -75,13 +57,19 @@ public class Runner implements IRunner, Runnable {
 	public static int timeOut = 500;
 	public static int outputBufferSize = 10000000;
 
-	public IChecker checker;
+	public Checker checker;
 
-	public Thread me;
-
-	public Runner(Integer id) {
+	public Runner(Integer id, Path runningPath, Solution solution, Checker checker) {
 		this.id = id;
 		this.listener = new HashMap<E, Callback>();
+		
+		this.runningPath = runningPath;
+		this.inputFile   = Paths.get(runningPath + "/" + "in");
+		this.outputFile  = Paths.get(runningPath + "/" + "out");
+		this.errorFile   = Paths.get(runningPath + "/" + "error");
+		
+		this.solution    = solution;
+		this.checker     = checker;
 	}
 	
 	public boolean generate() {
