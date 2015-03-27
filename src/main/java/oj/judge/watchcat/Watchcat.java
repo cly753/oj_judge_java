@@ -6,14 +6,15 @@ import java.util.Date;
 
 import oj.judge.center.IWatchcat;
 
-public class Watchcat extends Thread implements IWatchcat {
+public class Watchcat implements IWatchcat, Runnable {
 	public Date lastTime;
 	public Long timeOut;
 	public Long times;
 	
 	public URL target;
 	public String payload;
-	
+
+	public Thread running;
 	public Thread parent; // to kill?
 	
 	public Watchcat(String target, Long timeOut) throws MalformedURLException {
@@ -22,7 +23,8 @@ public class Watchcat extends Thread implements IWatchcat {
 	}
 	
 	public void watch() {
-		this.start();
+		running = new Thread(this);
+		running.start();
 	}
 	
 	public void poke() {
@@ -30,7 +32,7 @@ public class Watchcat extends Thread implements IWatchcat {
 	}
 	
 	public void terminate() {
-		this.interrupt();
+		running.interrupt();
 	}
 	
 	public void informRemote() {
