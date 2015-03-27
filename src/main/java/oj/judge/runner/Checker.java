@@ -9,10 +9,12 @@ import oj.judge.common.Solution;
 public class Checker implements IChecker {
 
     @Override
-    public void checck(Solution solution) {
+    public void check(Solution solution) {
         if (solution.output == null)
             return ;
-
+        if (solution.problem.output == null)
+        	return ;
+        
         int result = solution.problem.output.compareTo(solution.output);
         if (result == 0)
             return ;

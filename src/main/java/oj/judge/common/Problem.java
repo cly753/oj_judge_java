@@ -9,8 +9,8 @@ public class Problem {
 
     public String resourcesHash;
 
-    public String input;
-    public String output;
+    public String input  = "This is input from judge.";
+    public String output = "This is output from judge.";
     
     public Problem() {
 		//
