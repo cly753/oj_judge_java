@@ -22,7 +22,7 @@ class RealRunner extends Thread {
     }
 
 	public void event(EVENT e) {
-		listener.get(e).doAction();
+		listener.get(e).call();
 	}
 	public void event(EVENT e, Callback li) {
 		listener.put(e, li);

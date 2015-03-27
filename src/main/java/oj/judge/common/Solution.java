@@ -26,6 +26,7 @@ public class Solution {
 	
     // Used by judge
     public int language;
+    public final String classToRun = "Main";
     public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
     private static final String secureRunner = "";
 
@@ -59,14 +60,14 @@ public class Solution {
                               diagnostic.getLineNumber(),
                               diagnostic.getSource().toUri());
         
-		FileInputStream fis = new FileInputStream("Main.class");
-        FileOutputStream fos = new FileOutputStream(path + "/Main.class");
+		FileInputStream fis = new FileInputStream(classToRun + ".class");
+        FileOutputStream fos = new FileOutputStream(path + "/" + classToRun + ".class");
         fos.write(IOUtils.toByteArray(fis));
         fos.close();
     }
     private Iterable<JavaFileObject> getFileObjects() {
     	return Arrays.asList(
-    			(JavaFileObject)new SolutionJavaFileObject("Main", this.code)
+    			(JavaFileObject)new SolutionJavaFileObject(classToRun, this.code)
     			);
     }
     
