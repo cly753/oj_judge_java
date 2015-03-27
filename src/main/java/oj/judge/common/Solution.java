@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -25,7 +26,7 @@ public class Solution {
 	
     // Used by judge
     public int language;
-    public String code;
+    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
     private static final String secureRunner = "";
 
     // Used by judge
@@ -36,6 +37,7 @@ public class Solution {
     public String judgeResponse;
     public int timeUsed;
     public int memoryUsed;
+    public String output;
 
     public boolean judged;
     
@@ -45,7 +47,7 @@ public class Solution {
 		// 
     }
     
-    public void compileSave(String path) throws IOException {
+    public void compileSave(Path path) throws IOException {
     	JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     	Iterable<? extends JavaFileObject> fileObjects = getFileObjects();
     	DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
@@ -58,7 +60,7 @@ public class Solution {
                               diagnostic.getSource().toUri());
         
 		FileInputStream fis = new FileInputStream("Main.class");
-        FileOutputStream fos = new FileOutputStream("C:/Users/Liyang/Desktop/H.class");
+        FileOutputStream fos = new FileOutputStream(path + "/Main.class");
         fos.write(IOUtils.toByteArray(fis));
         fos.close();
     }
