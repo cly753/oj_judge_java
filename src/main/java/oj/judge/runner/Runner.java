@@ -1,31 +1,40 @@
 package oj.judge.runner;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Path;
 
+import oj.judge.center.IChecker;
 import oj.judge.center.IRunner;
-import oj.judge.common.Listener;
+import oj.judge.common.Callback;
 import oj.judge.common.Solution;
 
-public class Runner implements IRunner {
-	public Solution solution;
+public class Runner implements IRunner, Runnable {
+	@Override
+	public void run() {
+		generate();
+		execute();
+		checker.checck(this.solution);
+		callback.doAction();
+	}
+
+	@Override
+	public void judge(Path runningPath, Solution solution, IChecker checker, Callback callback) {
+		this.runningPath = runningPath;
+		this.solution = solution;
+		this.checker = checker;
+		this.callback = callback;
+		new Thread(this).start();
+	}
+
 	public Integer id;
-	
-	public String runningPath;
-	
-	public Map<String, List<Listener>> listeners;
-	
+	public Solution solution;
+	public Path runningPath;
+
+	public IChecker checker;
+	public Callback callback;
+
 	public Runner(Integer id) {
 		this.id = id;
-	}
-	
-	public boolean judge(Solution solution) {
-		generate();
-		
-		
-		return true; // filled up result in solution : Solution
 	}
 	
 	public boolean generate() {
@@ -38,7 +47,7 @@ public class Runner implements IRunner {
 		return false;
 	}
 	
-	public boolean judge() {
+	public boolean execute() {
 //		final long timeLimit = 0L;
 //		final Runner parent = this;
 //		new Thread() {
@@ -54,19 +63,7 @@ public class Runner implements IRunner {
 		//
 		return false;
 	}
-	
-	// TODO
-	// http://www.giocc.com/writing-an-event-driven-framework-with-java.html
-//	public void event(String e) {
-//		List<Listener> l = listeners.get(e);
-//		if (l != null) for (Listener li : l)
-//			li.doAction();
-//	}
-//	public void event(String e, Listener li) {
-//		List<Listener> l = listeners.get(e);
-//		if (l == null) l = new ArrayList<Listener>();
-//		l.add(li);
-//	}
+
 	
 	//
 	// TODO

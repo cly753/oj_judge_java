@@ -8,6 +8,9 @@ public class Problem {
     public boolean specialJudge;
 
     public String resourcesHash;
+
+    public String input;
+    public String output;
     
     public Problem() {
 		//
