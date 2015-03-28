@@ -12,4 +12,8 @@ public class Conf {
 	public static Path runningPath() {
 		return Paths.get("C:/Users/" + System.getProperty("user.name") + "/Desktop");
 	}
+	
+	public static boolean debug() {
+		return true;
+	}
 }

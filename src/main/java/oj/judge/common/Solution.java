@@ -1,7 +1,6 @@
 package oj.judge.common;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -18,9 +17,10 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
 import org.apache.commons.io.IOUtils;
+import org.json.JSONObject;
 
 public class Solution {
-	public enum Result { QU, AC, PE, WA, CE, RE, TL, ML, OL, SE, RF, CJ };
+	public enum Result { NONE, QU, AC, PE, WA, CE, RE, TL, ML, OL, SE, RF, CJ, JE };
 	
 	public Long id;
 	public Long problemId;
@@ -35,23 +35,26 @@ public class Solution {
     // Used by judge
     public Date receiveTime;
     public Date judgeTime;
+    public JSONObject runnerResult;
 
     public Result result;
     public String additionalResult;
     
-    public int timeUsed;
-    public int memoryUsed;
+    public double timeUsed;
+    public double memoryUsed;
     
     public String output = "This is output from solution.";
-
-    public boolean judged;
     
     public Solution(Problem problem) {
     	this.problem = problem;
-    	
+    	this.result = Result.NONE;
 		//
 		// TODO
 		// 
+    }
+    
+    public boolean judged() {
+    	return result != Result.NONE;
     }
     
     public boolean compileSave(Path path) throws IOException {
@@ -61,14 +64,15 @@ public class Solution {
     	StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
     	compiler.getTask(null, fileManager, diagnostics, null, null, fileObjects).call();
     	
+    	if (Conf.debug())
+	        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics())
+	            System.out.format("Error on line %d in %s%n",
+	                              diagnostic.getLineNumber(),
+	                              diagnostic.getSource().toUri());
+    	
     	if (diagnostics.getDiagnostics().size() > 0)
     		return false; // compilation error
     	
-        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics())
-            System.out.format("Error on line %d in %s%n",
-                              diagnostic.getLineNumber(),
-                              diagnostic.getSource().toUri());
-        
         //
         // TODO side effect
         // creating .class when new FileInputStream(classToRun + ".class") ??
@@ -106,6 +110,11 @@ public class Solution {
 }
 
 
+// Not Judged (NONE):
+//
+// Judge Error (JE):
+//
+//
 // UVa
 //
 // Verdict information
