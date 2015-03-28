@@ -16,4 +16,20 @@ public class Conf {
 	public static boolean debug() {
 		return true;
 	}
+	
+	public static long fetchInterval() {
+		return 2000;
+	}
+	
+	public static int bufferSize() {
+		return 100000;
+	}
+	
+	public static int timeOut() {
+		return 2000;
+	}
+	
+	public static Path securityPolicyFile() {
+		return Paths.get(".");
+	}
 }

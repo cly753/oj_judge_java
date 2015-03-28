@@ -19,11 +19,11 @@ public class Remote extends Thread {
 		listener.get(e).call();
 	}
 	
-	public long interval = 10000L;
+	public long fetchInterval;
 	
 	public Remote(long interval) {
 		this.listener = new HashMap<E, Callback>();
-		this.interval = interval;
+		this.fetchInterval = interval;
 	}
 	
 	public Solution getSolution() {

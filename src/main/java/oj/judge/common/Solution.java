@@ -74,7 +74,8 @@ public class Solution {
     		return false; // compilation error
     	
         //
-        // TODO side effect
+        // TODO
+    	// side effect ?
         // creating .class when new FileInputStream(classToRun + ".class") ??
         //
 		FileInputStream fis = new FileInputStream(classToRun + ".class");

@@ -54,12 +54,12 @@ public class Runner extends Thread {
 	public Solution solution;
 
 	public Path runningPath;
+	public Path securityPolicy;
 	public Path inputFile;
 	public Path resultFile;
-	public Path securityPolicy;
 
-	public static int timeOut = 2000;
-	public static int outputBufferSize = 10000000;
+	public long timeOut;
+	public int bufferSize;
 
 	public Checker checker;
 
@@ -67,10 +67,13 @@ public class Runner extends Thread {
 		this.id = id;
 		this.listener = new HashMap<E, Callback>();
 
+		this.timeOut = Conf.timeOut();
+		this.bufferSize = Conf.bufferSize();
+		
 		this.runningPath = runningPath;
-		this.resultFile  = Paths.get(runningPath + "/" + id.toString());
-		this.securityPolicy = Paths.get(runningPath + "/" + "x");
+		this.securityPolicy = Conf.securityPolicyFile();
 		this.inputFile   = Paths.get(runningPath + "/" + "in");
+		this.resultFile  = Paths.get(runningPath + "/" + id.toString());
 
 		this.solution    = solution;
 		this.checker     = checker;
@@ -120,6 +123,11 @@ public class Runner extends Thread {
 			return ;
 
 		List<String> cmd = Arrays.asList("java", "-cp", runningPath.toString(), "SecureRunner", resultFile.toString(), securityPolicy.toString());
+		
+		//
+		// TODO
+		// add JVM setting
+		//
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 
 		pb.redirectInput(inputFile.toFile());
@@ -127,8 +135,8 @@ public class Runner extends Thread {
 		try {
 			Process p = pb.start();
 
-			BufferedReader output = new BufferedReader (new InputStreamReader(p.getInputStream()), outputBufferSize);
-			BufferedReader error = new BufferedReader (new InputStreamReader(p.getErrorStream()), outputBufferSize);
+			BufferedReader output = new BufferedReader (new InputStreamReader(p.getInputStream()), bufferSize);
+			BufferedReader error = new BufferedReader (new InputStreamReader(p.getErrorStream()), bufferSize);
 
 			Thread.sleep(timeOut);
 			if (p.isAlive()) {
@@ -142,7 +150,7 @@ public class Runner extends Thread {
 			String outputRead = readBR(output);
 			String errorRead  = readBR(error);
 
-			if (outputRead.length() == outputBufferSize) {
+			if (outputRead.length() == bufferSize) {
 				solution.result = Solution.Result.OL;
 			}
 			else {
@@ -165,8 +173,8 @@ public class Runner extends Thread {
 	}
 	
 	public String readBR(BufferedReader br) throws IOException {
-		char[] buffer = new char[outputBufferSize];
-		int actualRead = br.read(buffer, 0, outputBufferSize);
+		char[] buffer = new char[bufferSize];
+		int actualRead = br.read(buffer, 0, bufferSize);
 		if (actualRead == -1)
 			return "";
 		else
