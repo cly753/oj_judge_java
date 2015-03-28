@@ -28,6 +28,15 @@ public class Checker {
     }
     
     private boolean cmp(String p, String s) {
-    	return p.equals(s);
+    	String[] pl = p.split("\n");
+    	String[] sl = p.split("\n");
+    	
+    	if (pl.length != sl.length)
+    		return false;
+    	
+    	for (int i = 0; i < pl.length; i++)
+    		if (!pl[i].trim().equals(sl[i].trim()))
+    			return false;
+    	return true;
     }
 }
