@@ -37,24 +37,23 @@ public class Runner extends Thread {
 	
 	@Override
 	public void run() {
-		generate();
-		prepareInput();
+		prepare();
 		execute();
 		cleanUp();
-		checker.check(this.solution);
+		checker.check(solution, resultFile);
 
 		emit(E.FINISH);
 	}
 	
 	public Integer id;
 	public Solution solution;
-	
-	public Path inputFile;
-	public Path outputFile;
-	public Path errorFile;
+
 	public Path runningPath;
+	public Path inputFile;
+	public Path resultFile;
+	public Path securityPolicy;
 	
-	public static int timeOut = 500;
+	public static int timeOut = 2000;
 	public static int outputBufferSize = 10000000;
 
 	public Checker checker;
@@ -64,21 +63,30 @@ public class Runner extends Thread {
 		this.listener = new HashMap<E, Callback>();
 		
 		this.runningPath = runningPath;
+		this.resultFile  = Paths.get(runningPath + "/" + id.toString());
+		this.securityPolicy = Paths.get(runningPath + "/" + "x");
 		this.inputFile   = Paths.get(runningPath + "/" + "in");
-		this.outputFile  = Paths.get(runningPath + "/" + "out");
-		this.errorFile   = Paths.get(runningPath + "/" + "error");
 		
 		this.solution    = solution;
 		this.checker     = checker;
 	}
-	
-	public boolean generate() {
+
+	public boolean prepare() {
 		if (solution.judged)
 			return true;
-		
+
+		boolean result = false; 
 		try {
-			boolean result = solution.compileSave(runningPath);
-			if (!result) {
+			result = solution.compileSave(runningPath);
+			if (result) {
+				delete(resultFile.toFile());
+				
+				OpenOption[] options = new OpenOption[] { WRITE, CREATE, TRUNCATE_EXISTING };
+				BufferedWriter writer = Files.newBufferedWriter(inputFile, Charset.forName("US-ASCII"), options);
+			    writer.write(solution.problem.input, 0, solution.problem.input.length());
+			    writer.close();
+			}
+			else {
 				solution.result = Solution.Result.CE;
 				solution.judged = true;
 			}
@@ -86,40 +94,24 @@ public class Runner extends Thread {
 			e.printStackTrace();
 			return false;
 		}
-		return false;
-	}
-	
-	public boolean prepareInput() {
-		try {
-			OpenOption[] options = new OpenOption[] { WRITE, CREATE, TRUNCATE_EXISTING };
-			BufferedWriter writer = Files.newBufferedWriter(inputFile, Charset.forName("US-ASCII"), options);
-		    writer.write(solution.problem.input, 0, solution.problem.input.length());
-		    writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
+		return result;
 	}
 	public boolean cleanUp() {
 		boolean ok = true;
 		ok &= delete(inputFile.toFile());
-		ok &= delete(outputFile.toFile());
-		ok &= delete(errorFile.toFile());
 		ok &= delete(Paths.get(runningPath + "/" + solution.classToRun + ".class").toFile());
-//		ok &= delete(Paths.get(runningPath + "/" + "SecureRunner").toFile());
+//		ok &= delete(Paths.get(runningPath + "/" + "SecureRunner" + ".class").toFile());
 		return ok;
 	}
 	public boolean delete(File f) {
-		if(f.exists() && !f.isDirectory())
-			return f.delete();
-		return false;
+		return (f.exists() && !f.isDirectory()) ? f.delete() : false;
 	}
+	
 	public boolean execute() {
 		if (solution.judged)
 			return true;
 		
-		List<String> cmd = Arrays.asList("java", runningPath + "/" + "SecureRunner", "0", ".", ".");
+		List<String> cmd = Arrays.asList("java", "-cp", runningPath.toString(), "SecureRunner", resultFile.toString(), securityPolicy.toString());
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		
 		pb.redirectInput(inputFile.toFile());
@@ -129,30 +121,31 @@ public class Runner extends Thread {
 			
 			BufferedReader output = new BufferedReader (new InputStreamReader(p.getInputStream()), outputBufferSize);
 			BufferedReader error = new BufferedReader (new InputStreamReader(p.getErrorStream()), outputBufferSize);
-			error.close();
 			
-			System.out.println(label + "sleep");
 			Thread.sleep(timeOut);
 			if (p.isAlive()) {
 				p.destroyForcibly();
-				System.out.println(label + "force kill");
-			}
-			System.out.println(label + "wakeup");
-			
-			char[] buffer = new char[outputBufferSize];
-			int actualRead = output.read(buffer, 0, outputBufferSize);
-			output.close();
-
-		    if (actualRead == -1) {
-		    	solution.output = "";
-		    }
-		    else if (actualRead == outputBufferSize) {
-				solution.result = Solution.Result.OL;
+				solution.result = Solution.Result.TL;
 				solution.judged = true;
 			}
 			else {
-				solution.output = new String(buffer, 0, actualRead);
+				String outputRead = readBR(output);
+				String errorRead  = readBR(error);
+
+			    if (outputRead.length() == outputBufferSize) {
+					solution.result = Solution.Result.OL;
+					solution.judged = true;
+				}
+				else {
+					solution.output = outputRead;
+				}
+			    
+			    System.out.println("output: ----\n" + outputRead + "------------");
+			    System.out.println("error : ----\n" + errorRead  + "------------");
 			}
+		    
+		    output.close();
+		    error.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -160,5 +153,14 @@ public class Runner extends Thread {
 		}
 
 		return false;
+	}
+	
+	public String readBR(BufferedReader br) throws IOException {
+		char[] buffer = new char[outputBufferSize];
+		int actualRead = br.read(buffer, 0, outputBufferSize);
+		if (actualRead == -1)
+			return "";
+		else
+			return new String(buffer, 0, actualRead);
 	}
 }

@@ -69,9 +69,14 @@ public class Solution {
                               diagnostic.getLineNumber(),
                               diagnostic.getSource().toUri());
         
+        //
+        // TODO side effect
+        // creating .class when new FileInputStream(classToRun + ".class") ??
+        //
 		FileInputStream fis = new FileInputStream(classToRun + ".class");
         FileOutputStream fos = new FileOutputStream(path + "/" + classToRun + ".class");
         fos.write(IOUtils.toByteArray(fis));
+        fis.close();
         fos.close();
         
         return true;

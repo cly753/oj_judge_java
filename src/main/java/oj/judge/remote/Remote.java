@@ -1,8 +1,12 @@
 package oj.judge.remote;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import oj.judge.common.Callback;
+import oj.judge.common.Problem;
+import oj.judge.common.Solution;
+import oj.judge.runner.Runner.E;
 
 public class Remote extends Thread {
 	public enum E { NEWPROBLEM, ERROR };
@@ -15,15 +19,20 @@ public class Remote extends Thread {
 		listener.get(e).call();
 	}
 	
-	public int interval = 10000;
+	public long interval = 10000L;
 	
-	public Remote() {
-		
+	public Remote(long interval) {
+		this.listener = new HashMap<E, Callback>();
+		this.interval = interval;
 	}
 	
-	public void getProblem() {
+	public Solution getSolution() {
 		
-		emit(E.NEWPROBLEM);
+		return new Solution(new Problem());
+	}
+	
+	public void pushResult() {
+		
 	}
 	
 	public void terminate() {
@@ -32,15 +41,18 @@ public class Remote extends Thread {
 	
 	@Override
 	public void run() {
-		while (!this.interrupted()) {
-			getProblem();
-			
-			try {
-				this.sleep(interval);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-				break;
-			}
-		}
+		emit(E.NEWPROBLEM);
+		
+//		while (!Thread.interrupted()) {
+//			Solution solution = getSolution();
+//			if (solution != null)
+//				emit(E.NEWPROBLEM);
+//			
+//			try {
+//				Thread.sleep(interval);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 }
