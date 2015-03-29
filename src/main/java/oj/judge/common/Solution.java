@@ -7,6 +7,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Locale;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -22,32 +23,33 @@ import org.json.JSONObject;
 public class Solution {
 	public enum Result { NONE, QU, AC, PE, WA, CE, RE, TL, ML, OL, SE, RF, CJ, JE };
 	
-	public Long id;
-	public Long problemId;
+	public Long id = 0L;
+	public Long problemId = 0L;
 	public Problem problem;
 	
     // Used by judge
-    public int language;
-    public final String classToRun = "Main";
+    public int language = 0;
+    public final String codeClass = "Main";
     public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
-    private static final String secureRunner = "";
+    private static final String secureRunnerClass = "SecureRunner";
+    private static final String secureRunner = "import static java.nio.file.StandardOpenOption.*;import java.io.*;import java.lang.management.*;import java.nio.charset.Charset;import java.nio.file.*;public class SecureRunner {   private static ThreadMXBean bean = ManagementFactory.getThreadMXBean(); private static String resultFile; private static String result; private static long startTimeNanoSecond; private static long endTimeNanoSecond;   public static void main(String[] args) throws IOException {  installSecurityManager(args[1]);    try {   startTimeNanoSecond  = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;      Main.main(new String[0]);      endTimeNanoSecond = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;   result = \"{\\\"TIME\\\":\" + String.valueOf(endTimeNanoSecond - startTimeNanoSecond) + \"}\";  } catch (SecurityException e) {   result = \"{\\\"ERROR\\\":\" + e.getClass().getSimpleName() + \"}\";  } catch (Exception e) {   result = \"{\\\"ERROR\\\":\" + e.getClass().getSimpleName() + \"}\";  }    uninstallSecurityManager();  OpenOption[] options = new OpenOption[] { WRITE, CREATE_NEW, TRUNCATE_EXISTING };  BufferedWriter writer = Files.newBufferedWriter(Paths.get(args[0]), Charset.forName(\"US-ASCII\"), options);  writer.write(result, 0, result.length());  writer.close(); }  public static void installSecurityManager(String path) { }  public static void uninstallSecurityManager() { }}";
 
     // Used by judge
-    public Date receiveTime;
-    public Date judgeTime;
-    public JSONObject runnerResult;
+    public Date receiveTime = new Date();
+    public Date judgeTime = new Date();
+    public JSONObject runnerResult = null;
 
-    public Result result;
-    public String additionalResult;
+    public Result result = Result.NONE;
+    public String additionalResult = "";
     
-    public double timeUsed;
-    public double memoryUsed;
+    public double timeUsed = 0;
+    public double memoryUsed = 0;
     
     public String output = "This is output from solution.";
+    public String error = "";
     
     public Solution(Problem problem) {
     	this.problem = problem;
-    	this.result = Result.NONE;
 		//
 		// TODO
 		// 
@@ -66,9 +68,11 @@ public class Solution {
     	
     	if (Conf.debug())
 	        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics())
-	            System.out.format("Error on line %d in %s%n",
+	            System.out.format("Error on line %d:%d in %s: %s%n",
 	                              diagnostic.getLineNumber(),
-	                              diagnostic.getSource().toUri());
+	                              diagnostic.getColumnNumber(),
+	                              diagnostic.getSource().toUri(),
+	                              diagnostic.getMessage(Locale.ENGLISH));
     	
     	if (diagnostics.getDiagnostics().size() > 0)
     		return false; // compilation error
@@ -78,8 +82,14 @@ public class Solution {
     	// side effect ?
         // creating .class when new FileInputStream(classToRun + ".class") ??
         //
-		FileInputStream fis = new FileInputStream(classToRun + ".class");
-        FileOutputStream fos = new FileOutputStream(path + "/" + classToRun + ".class");
+		FileInputStream fis = new FileInputStream(codeClass + ".class");
+        FileOutputStream fos = new FileOutputStream(path + "/" + codeClass + ".class");
+        fos.write(IOUtils.toByteArray(fis));
+        fis.close();
+        fos.close();
+        
+        fis = new FileInputStream(secureRunnerClass + ".class");
+        fos = new FileOutputStream(path + "/" + secureRunnerClass + ".class");
         fos.write(IOUtils.toByteArray(fis));
         fis.close();
         fos.close();
@@ -88,7 +98,8 @@ public class Solution {
     }
     private Iterable<JavaFileObject> getFileObjects() {
     	return Arrays.asList(
-    			(JavaFileObject)new SolutionJavaFileObject(classToRun, this.code)
+    			(JavaFileObject)new SolutionJavaFileObject(codeClass, this.code),
+    			(JavaFileObject)new SolutionJavaFileObject(secureRunnerClass, Solution.secureRunner)
     			);
     }
     
@@ -105,9 +116,9 @@ public class Solution {
 		}
     }
         
-	//
-	// TODO
-	// 
+	public String toString() {
+		return "Solution " + id + ": result = " + Formatter.toString(result);
+	}
 }
 
 

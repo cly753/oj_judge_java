@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import oj.judge.common.Callback;
+import oj.judge.common.Formatter;
 import oj.judge.common.Problem;
 import oj.judge.common.Solution;
 import oj.judge.runner.Runner.E;
@@ -15,7 +16,8 @@ public class Remote extends Thread {
 	public void reg(E e, Callback c) {
 		listener.put(e, c);
 	}
-	public void emit(E e) {
+	public void emit(E e, Object o) {
+		listener.get(e).o = o;
 		listener.get(e).call();
 	}
 	
@@ -31,7 +33,7 @@ public class Remote extends Thread {
 		return new Solution(new Problem());
 	}
 	
-	public void pushResult() {
+	public void pushResult(String result) {
 		
 	}
 	
@@ -41,7 +43,7 @@ public class Remote extends Thread {
 	
 	@Override
 	public void run() {
-		emit(E.NEWPROBLEM);
+		emit(E.NEWPROBLEM, "");
 		
 //		while (!Thread.interrupted()) {
 //			Solution solution = getSolution();

@@ -1,12 +1,32 @@
 package oj.judge.common;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
+
+import org.json.JSONObject;
 
 public class Conf {
+	private static final String label = "Conf::";
 
-	public static void init() {
+	public static final String configurePath = "./configure.json";
+	private static JSONObject conf = null;
+	
+	public static boolean init() {
+		System.out.println(label + "Configure File: " + new File(configurePath).getAbsolutePath());
 		
+		try {
+			String raw = Files.lines(Paths.get(configurePath)).reduce("", String::concat);
+			conf = new JSONObject(raw);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+		
+		return true;
 	}
 	
 	public static Path runningPath() {
@@ -31,5 +51,13 @@ public class Conf {
 	
 	public static Path securityPolicyFile() {
 		return Paths.get(".");
+	}
+	
+	public static String remoteHost() {
+		return "localhost";
+	}
+	
+	public static int remotePort() {
+		return 9000;
 	}
 }

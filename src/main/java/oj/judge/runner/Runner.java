@@ -8,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -18,8 +17,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.json.JsonObject;
 
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
@@ -36,7 +33,8 @@ public class Runner extends Thread {
 	public void reg(E e, Callback c) {
 		listener.put(e, c);
 	}
-	public void emit(E e) {
+	public void emit(E e, Object o) {
+		listener.get(e).o = o;
 		listener.get(e).call();
 	}
 
@@ -44,10 +42,10 @@ public class Runner extends Thread {
 	public void run() {
 		prepare();
 		execute();
-		cleanUp();
+//		cleanUp();
 		checker.check(solution);
 
-		emit(E.FINISH);
+		emit(E.FINISH, solution);
 	}
 
 	public Integer id;
@@ -56,6 +54,8 @@ public class Runner extends Thread {
 	public Path runningPath;
 	public Path securityPolicy;
 	public Path inputFile;
+	public Path outputFile;
+	public Path errorFile;
 	public Path resultFile;
 
 	public long timeOut;
@@ -73,6 +73,8 @@ public class Runner extends Thread {
 		this.runningPath = runningPath;
 		this.securityPolicy = Conf.securityPolicyFile();
 		this.inputFile   = Paths.get(runningPath + "/" + "in");
+		this.outputFile  = Paths.get(runningPath + "/" + "out");
+		this.errorFile   = Paths.get(runningPath + "/" + "error");
 		this.resultFile  = Paths.get(runningPath + "/" + id.toString());
 
 		this.solution    = solution;
@@ -95,11 +97,15 @@ public class Runner extends Thread {
 			if (solution.judged())
 				return ;
 
-			delete(resultFile.toFile());
-
 			OpenOption[] options = new OpenOption[] { WRITE, CREATE, TRUNCATE_EXISTING };
 			BufferedWriter writer = Files.newBufferedWriter(inputFile, Charset.forName("US-ASCII"), options);
 			writer.write(solution.problem.input, 0, solution.problem.input.length());
+			writer.close();
+			
+			writer = Files.newBufferedWriter(outputFile, Charset.forName("US-ASCII"), options);
+			writer.close();
+			
+			writer = Files.newBufferedWriter(errorFile, Charset.forName("US-ASCII"), options);
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -109,9 +115,11 @@ public class Runner extends Thread {
 	public boolean cleanUp() {
 		boolean ok = true;
 		ok &= delete(inputFile.toFile());
+		ok &= delete(outputFile.toFile());
+		ok &= delete(errorFile.toFile());
 		ok &= delete(resultFile.toFile());
-		ok &= delete(Paths.get(runningPath + "/" + solution.classToRun + ".class").toFile());
-		//		ok &= delete(Paths.get(runningPath + "/" + "SecureRunner" + ".class").toFile());
+		ok &= delete(Paths.get(runningPath + "/" + solution.codeClass + ".class").toFile());
+		//ok &= delete(Paths.get(runningPath + "/" + "SecureRunner" + ".class").toFile());
 		return ok;
 	}
 	public boolean delete(File f) {
@@ -122,21 +130,28 @@ public class Runner extends Thread {
 		if (solution.judged())
 			return ;
 
-		List<String> cmd = Arrays.asList("java", "-cp", runningPath.toString(), "SecureRunner", resultFile.toString(), securityPolicy.toString());
+		List<String> cmd = Arrays.asList("java"
+				, "-client"
+				, "-Xmx" + (int)(solution.problem.memoryLimit + 10) + "m"
+				, "-Xss64m"
+				, "-cp"
+				, runningPath.toString()
+				, "SecureRunner"
+				, resultFile.toString()
+				, securityPolicy.toString()
+				);
 		
-		//
-		// TODO
-		// add JVM setting
-		//
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 
 		pb.redirectInput(inputFile.toFile());
+		pb.redirectOutput(outputFile.toFile());
+		pb.redirectError(errorFile.toFile());
 
 		try {
 			Process p = pb.start();
 
-			BufferedReader output = new BufferedReader (new InputStreamReader(p.getInputStream()), bufferSize);
-			BufferedReader error = new BufferedReader (new InputStreamReader(p.getErrorStream()), bufferSize);
+//			BufferedReader output = new BufferedReader (new InputStreamReader(p.getInputStream()), bufferSize);
+//			BufferedReader error = new BufferedReader (new InputStreamReader(p.getErrorStream()), bufferSize);
 
 			Thread.sleep(timeOut);
 			if (p.isAlive()) {
@@ -147,22 +162,32 @@ public class Runner extends Thread {
 			if (solution.judged())
 				return ;
 
-			String outputRead = readBR(output);
-			String errorRead  = readBR(error);
-
-			if (outputRead.length() == bufferSize) {
+			solution.error = Files.lines(errorFile).reduce("", (a, b) -> a + '\n' + b);
+			if (solution.error.length() > 0) {
+				if (Conf.debug()) System.out.println("error : ----\n" + solution.error  + "\n------------");
+				solution.result = Solution.Result.JE;
+				return ;
+			}
+			
+//			String outputRead = readBR(output);
+//			String errorRead  = readBR(error);
+//			output.close();
+//			error.close();
+			 
+//			if (outputRead.length() == bufferSize) {
+//				solution.result = Solution.Result.OL;
+//			}
+			if (outputFile.toFile().length() > bufferSize) {
 				solution.result = Solution.Result.OL;
 			}
 			else {
-				solution.output = outputRead;
+//				solution.output = outputRead;
+				solution.output = Files.lines(outputFile).reduce("", (a, b) -> a + '\n' + b);
 				solution.runnerResult = new JSONObject(Files.lines(resultFile).reduce("", String::concat));
 			}
 
-			if (Conf.debug()) System.out.println("output: ----\n" + outputRead + "------------");
-			if (Conf.debug()) System.out.println("error : ----\n" + errorRead  + "------------");
+			if (Conf.debug()) System.out.println("output: ----\n" + solution.output + "\n------------");
 
-			output.close();
-			error.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			solution.result = Solution.Result.JE;

@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
+import oj.judge.common.Formatter;
 import oj.judge.common.Problem;
 import oj.judge.common.Solution;
 import oj.judge.remote.Remote;
@@ -18,8 +19,6 @@ public class Center extends Thread {
     private ConcurrentHashMap<Integer, Runner> runner;
     
     public static void main(String[] args) {
-    	Conf.init();
-    	
     	Center c = new Center();
     	c.start();
     }
@@ -30,6 +29,9 @@ public class Center extends Thread {
 
 	@Override
 	public void run() {
+    	if (!Conf.init())
+    		return ;
+    	
 		remote = new Remote(Conf.fetchInterval());
 		remote.setName("Remote");
 		remote.reg(Remote.E.NEWPROBLEM, new Callback() {
@@ -40,13 +42,15 @@ public class Center extends Thread {
                 Path runningPath = Conf.runningPath();
                 
                 Integer id = runner.size();
-                Runner r = new Runner(id, runningPath, new Solution(new Problem()), new Checker());
+                Runner r = new Runner(id, runningPath, Formatter.toSolution((String)o), new Checker());
                 r.setName("Runner-" + id);
                 runner.put(id, r);
                 r.reg(Runner.E.FINISH, new Callback() {
                     @Override
                     public void call() {
                     	if (Conf.debug()) System.out.println(label + "Callback Runner.E.FINISH");
+                    	if (Conf.debug()) System.out.println(label + "Solution::result = " + Formatter.toString(((Solution)o).result));
+                    	remote.pushResult(Formatter.toResponse((Solution)o));
                     	
                     	runner.remove(id);
                     }
