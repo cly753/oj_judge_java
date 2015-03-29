@@ -53,11 +53,10 @@ public class Conf {
 		return Paths.get(".");
 	}
 	
-	public static String remoteHost() {
-		return "localhost";
+	public static String judgeFetchSolution() {
+		return "http://localhost:9000/judge/fetch";
 	}
-	
-	public static int remotePort() {
-		return 9000;
+	public static String handleJudgeUpdateResult() {
+		return "http://localhost:9000/judge/update";
 	}
 }

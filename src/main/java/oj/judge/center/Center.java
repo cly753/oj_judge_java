@@ -50,6 +50,7 @@ public class Center extends Thread {
                     public void call() {
                     	if (Conf.debug()) System.out.println(label + "Callback Runner.E.FINISH");
                     	if (Conf.debug()) System.out.println(label + "Solution::result = " + Formatter.toString(((Solution)o).result));
+                    	
                     	remote.pushResult(Formatter.toResponse((Solution)o));
                     	
                     	runner.remove(id);

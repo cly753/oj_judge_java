@@ -129,6 +129,8 @@ public class Runner extends Thread {
 	public void execute() {
 		if (solution.judged())
 			return ;
+		
+		applyLinux();
 
 		List<String> cmd = Arrays.asList("java"
 				, "-client"
@@ -204,5 +206,9 @@ public class Runner extends Thread {
 			return "";
 		else
 			return new String(buffer, 0, actualRead);
+	}
+	
+	public void applyLinux() {
+		
 	}
 }
