@@ -42,7 +42,7 @@ public class Runner extends Thread {
 	public void run() {
 		prepare();
 		execute();
-//		cleanUp();
+		cleanUp();
 		checker.check(solution);
 
 		emit(E.FINISH, solution);
@@ -119,7 +119,7 @@ public class Runner extends Thread {
 		ok &= delete(errorFile.toFile());
 		ok &= delete(resultFile.toFile());
 		ok &= delete(Paths.get(runningPath + "/" + solution.codeClass + ".class").toFile());
-		//ok &= delete(Paths.get(runningPath + "/" + "SecureRunner" + ".class").toFile());
+		ok &= delete(Paths.get(runningPath + "/" + "SecureRunner" + ".class").toFile());
 		return ok;
 	}
 	public boolean delete(File f) {
@@ -131,14 +131,22 @@ public class Runner extends Thread {
 			return ;
 		
 		applyLinux();
+		
+        //
+        // TODO
+        // drop wrapper class
+        //
 
 		List<String> cmd = Arrays.asList("java"
 				, "-client"
 				, "-Xmx" + (int)(solution.problem.memoryLimit + 10) + "m"
 				, "-Xss64m"
+//				, "-Djava.security.manager"
+//				, "-Djava.security.policy=" + securityPolicy
 				, "-cp"
 				, runningPath.toString()
-				, "SecureRunner"
+//				, solution.codeClass
+				, Solution.secureRunnerClass
 				, resultFile.toString()
 				, securityPolicy.toString()
 				);
@@ -151,10 +159,7 @@ public class Runner extends Thread {
 
 		try {
 			Process p = pb.start();
-
-//			BufferedReader output = new BufferedReader (new InputStreamReader(p.getInputStream()), bufferSize);
-//			BufferedReader error = new BufferedReader (new InputStreamReader(p.getErrorStream()), bufferSize);
-
+			
 			Thread.sleep(timeOut);
 			if (p.isAlive()) {
 				p.destroyForcibly();
@@ -168,22 +173,14 @@ public class Runner extends Thread {
 			if (solution.error.length() > 0) {
 				if (Conf.debug()) System.out.println("error : ----\n" + solution.error  + "\n------------");
 				solution.result = Solution.Result.JE;
+//				solution.result = Solution.Result.RE;
 				return ;
 			}
-			
-//			String outputRead = readBR(output);
-//			String errorRead  = readBR(error);
-//			output.close();
-//			error.close();
-			 
-//			if (outputRead.length() == bufferSize) {
-//				solution.result = Solution.Result.OL;
-//			}
+
 			if (outputFile.toFile().length() > bufferSize) {
 				solution.result = Solution.Result.OL;
 			}
 			else {
-//				solution.output = outputRead;
 				solution.output = Files.lines(outputFile).reduce("", (a, b) -> a + '\n' + b);
 				solution.runnerResult = new JSONObject(Files.lines(resultFile).reduce("", String::concat));
 			}
@@ -209,6 +206,9 @@ public class Runner extends Thread {
 	}
 	
 	public void applyLinux() {
-		
+        //
+        // TODO
+        // drop wrapper class
+        //
 	}
 }

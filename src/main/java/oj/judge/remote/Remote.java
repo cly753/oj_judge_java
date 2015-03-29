@@ -11,12 +11,9 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.HttpsURLConnection;
-
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
 import oj.judge.common.Formatter;
-import oj.judge.common.Problem;
 import oj.judge.common.Solution;
 
 public class Remote extends Thread {
@@ -41,68 +38,79 @@ public class Remote extends Thread {
 	}
 	
 	public String getSolution() {
-		try {
-			URL url = new URL(Conf.judgeFetchSolution());
-
-			if (Conf.debug()) System.out.println(label + url);
-
-			HttpURLConnection con = (HttpsURLConnection) url.openConnection();
-			con.setRequestMethod("POST");
-			con.setUseCaches(false);
-			
-			con.setDoOutput(true);
-			
-			DataOutputStream dos = new DataOutputStream(con.getOutputStream());
-			dos.writeBytes("hello=" + URLEncoder.encode("world", "UTF-8"));
-			dos.flush(); dos.close();
-
-			int responseCode = con.getResponseCode();
-			if (Conf.debug()) System.out.println(label + "response code = " + responseCode);
-
-			String oneLine, allLine = ""; BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-			while ((oneLine = br.readLine()) != null) allLine += oneLine; br.close();
-
-			if (Conf.debug()) System.out.println(allLine);
-			
-			return allLine;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return "";
+		
+		//
+		// TODO
+		//
+		
+//		try {
+//			URL url = new URL(Conf.judgeFetchSolution());
+//
+//			if (Conf.debug()) System.out.println(label + url);
+//
+//			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+//			con.setRequestMethod("POST");
+//			con.setUseCaches(false);
+//			
+//			con.setDoOutput(true);
+//			
+//			DataOutputStream dos = new DataOutputStream(con.getOutputStream());
+//			dos.writeBytes("hello=" + URLEncoder.encode("world", "UTF-8"));
+//			dos.flush(); dos.close();
+//
+//			int responseCode = con.getResponseCode();
+//			if (Conf.debug()) System.out.println(label + "response code = " + responseCode);
+//
+//			String oneLine, allLine = ""; BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+//			while ((oneLine = br.readLine()) != null) allLine += oneLine; br.close();
+//
+//			if (Conf.debug()) System.out.println(allLine);
+//			
+//			return allLine;
+//		} catch (MalformedURLException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		return null;
 	}
 	
 	public boolean pushResult(String result) {
-		try {
-			URL url = new URL(Conf.handleJudgeUpdateResult());
-
-			if (Conf.debug()) System.out.println(label + url);
-
-			HttpURLConnection con = (HttpsURLConnection) url.openConnection();
-			con.setRequestMethod("POST");
-			con.setUseCaches(false);
-			
-			con.setDoOutput(true);
-			
-			DataOutputStream dos = new DataOutputStream(con.getOutputStream());
-			dos.writeBytes("hello=" + URLEncoder.encode("world", "UTF-8"));
-			dos.flush(); dos.close();
-
-			int responseCode = con.getResponseCode();
-			if (Conf.debug()) System.out.println(label + "response code = " + responseCode);
-
-			String oneLine, allLine = ""; BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-			while ((oneLine = br.readLine()) != null) allLine += oneLine; br.close();
-
-			if (Conf.debug()) System.out.println(allLine);
-			
-			return true;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+		//
+		// TODO
+		//
+		
+//		try {
+//			URL url = new URL(Conf.handleJudgeUpdateResult());
+//
+//			if (Conf.debug()) System.out.println(label + url);
+//
+//			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+//			con.setRequestMethod("POST");
+//			con.setUseCaches(false);
+//			
+//			con.setDoOutput(true);
+//			
+//			DataOutputStream dos = new DataOutputStream(con.getOutputStream());
+//			dos.writeBytes("hello=" + URLEncoder.encode("world", "UTF-8"));
+//			dos.flush(); dos.close();
+//
+//			int responseCode = con.getResponseCode();
+//			if (Conf.debug()) System.out.println(label + "response code = " + responseCode);
+//
+//			String oneLine, allLine = ""; BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+//			while ((oneLine = br.readLine()) != null) allLine += oneLine; br.close();
+//
+//			if (Conf.debug()) System.out.println(allLine);
+//			
+//			return true;
+//		} catch (MalformedURLException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 		return false;
 	}
 	
@@ -112,7 +120,11 @@ public class Remote extends Thread {
 	
 	@Override
 	public void run() {
-		Solution solution = Formatter.toSolution(getSolution());
+		//
+		// TODO
+		//
+		
+		String solution = getSolution();
 		if (solution != null)
 			emit(E.NEWPROBLEM, solution);
 		

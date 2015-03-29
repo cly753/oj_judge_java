@@ -31,8 +31,8 @@ public class Solution {
     public int language = 0;
     public final String codeClass = "Main";
     public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
-    private static final String secureRunnerClass = "SecureRunner";
-    private static final String secureRunner = "import static java.nio.file.StandardOpenOption.*;import java.io.*;import java.lang.management.*;import java.nio.charset.Charset;import java.nio.file.*;public class SecureRunner {   private static ThreadMXBean bean = ManagementFactory.getThreadMXBean(); private static String resultFile; private static String result; private static long startTimeNanoSecond; private static long endTimeNanoSecond;   public static void main(String[] args) throws IOException {  installSecurityManager(args[1]);    try {   startTimeNanoSecond  = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;      Main.main(new String[0]);      endTimeNanoSecond = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;   result = \"{\\\"TIME\\\":\" + String.valueOf(endTimeNanoSecond - startTimeNanoSecond) + \"}\";  } catch (SecurityException e) {   result = \"{\\\"ERROR\\\":\" + e.getClass().getSimpleName() + \"}\";  } catch (Exception e) {   result = \"{\\\"ERROR\\\":\" + e.getClass().getSimpleName() + \"}\";  }    uninstallSecurityManager();  OpenOption[] options = new OpenOption[] { WRITE, CREATE_NEW, TRUNCATE_EXISTING };  BufferedWriter writer = Files.newBufferedWriter(Paths.get(args[0]), Charset.forName(\"US-ASCII\"), options);  writer.write(result, 0, result.length());  writer.close(); }  public static void installSecurityManager(String path) { }  public static void uninstallSecurityManager() { }}";
+    public static final String secureRunnerClass = "SecureRunner";
+    public static final String secureRunner = "import static java.nio.file.StandardOpenOption.*;import java.io.*;import java.lang.management.*;import java.nio.charset.Charset;import java.nio.file.*;public class SecureRunner {   private static ThreadMXBean bean = ManagementFactory.getThreadMXBean(); private static String resultFile; private static String result; private static long startTimeNanoSecond; private static long endTimeNanoSecond;   public static void main(String[] args) throws IOException {  installSecurityManager(args[1]);    try {   startTimeNanoSecond  = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;      Main.main(new String[0]);      endTimeNanoSecond = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;   result = \"{\\\"TIME\\\":\" + String.valueOf(endTimeNanoSecond - startTimeNanoSecond) + \"}\";  } catch (SecurityException e) {   result = \"{\\\"ERROR\\\":\" + e.getClass().getSimpleName() + \"}\";  } catch (Exception e) {   result = \"{\\\"ERROR\\\":\" + e.getClass().getSimpleName() + \"}\";  }    uninstallSecurityManager();  OpenOption[] options = new OpenOption[] { WRITE, CREATE_NEW, TRUNCATE_EXISTING };  BufferedWriter writer = Files.newBufferedWriter(Paths.get(args[0]), Charset.forName(\"US-ASCII\"), options);  writer.write(result, 0, result.length());  writer.close(); }  public static void installSecurityManager(String path) { }  public static void uninstallSecurityManager() { }}";
 
     // Used by judge
     public Date receiveTime = new Date();
@@ -88,6 +88,10 @@ public class Solution {
         fis.close();
         fos.close();
         
+        //
+        // TODO
+        // drop wrapper class
+        //
         fis = new FileInputStream(secureRunnerClass + ".class");
         fos = new FileOutputStream(path + "/" + secureRunnerClass + ".class");
         fos.write(IOUtils.toByteArray(fis));
@@ -98,8 +102,8 @@ public class Solution {
     }
     private Iterable<JavaFileObject> getFileObjects() {
     	return Arrays.asList(
-    			(JavaFileObject)new SolutionJavaFileObject(codeClass, this.code),
-    			(JavaFileObject)new SolutionJavaFileObject(secureRunnerClass, Solution.secureRunner)
+    			(JavaFileObject)new SolutionJavaFileObject(codeClass, this.code)
+    			, (JavaFileObject)new SolutionJavaFileObject(secureRunnerClass, Solution.secureRunner)
     			);
     }
     

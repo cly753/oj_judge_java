@@ -1,5 +1,7 @@
 package oj.judge.common;
 
+import org.json.JSONObject;
+
 
 /**
  * Created by t_chenli on 3/27/2015.
@@ -7,10 +9,14 @@ package oj.judge.common;
 public class Formatter {
 
     public static String toResponse(Solution solution) {
+    	JSONObject jo = new JSONObject("{}");
+    	
     	return "";
     }
     
     public static Solution toSolution(String solution) {
+    	JSONObject jo = new JSONObject("{}");
+    	
     	return new Solution(new Problem());
     }
     
