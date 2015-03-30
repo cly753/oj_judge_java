@@ -5,11 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
-import oj.judge.common.Formatter;
-import oj.judge.common.Problem;
 import oj.judge.common.Solution;
 import oj.judge.remote.Remote;
-import oj.judge.runner.Checker;
 import oj.judge.runner.Runner;
 
 public class Center extends Thread {
@@ -41,18 +38,17 @@ public class Center extends Thread {
             	
                 Path runningPath = Conf.runningPath();
                 
-                Integer id = runner.size();
-                Runner r = new Runner(id, runningPath, Formatter.toSolution((String)o), new Checker());
+                final Integer id = runner.size();
+                Runner r = new Runner(id, runningPath, (Solution)o);
                 r.setName("Runner-" + id);
                 runner.put(id, r);
                 r.reg(Runner.E.FINISH, new Callback() {
                     @Override
                     public void call() {
                     	if (Conf.debug()) System.out.println(label + "Callback Runner.E.FINISH");
-                    	if (Conf.debug()) System.out.println(label + "Solution::result = " + Formatter.toString(((Solution)o).result));
+                    	if (Conf.debug()) System.out.println(label + (Solution)o);
                     	
-                    	remote.pushResult(Formatter.toResponse((Solution)o));
-                    	
+                    	remote.pushSolution((Solution)o);
                     	runner.remove(id);
                     }
                 });

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 import org.json.JSONObject;
 
@@ -13,14 +12,14 @@ public class Conf {
 	private static final String label = "Conf::";
 
 	public static final String configurePath = "./configure.json";
-	private static JSONObject conf = null;
+	private static JSONObject conf;
 	
 	public static boolean init() {
 		System.out.println(label + "Configure File: " + new File(configurePath).getAbsolutePath());
 		
 		try {
-			String raw = Files.lines(Paths.get(configurePath)).reduce("", String::concat);
-			conf = new JSONObject(raw);
+			conf = new JSONObject(Files.lines(Paths.get(configurePath)).reduce("", String::concat));
+			remoteSocket = "http://localhost:9000";
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;
@@ -52,11 +51,16 @@ public class Conf {
 	public static Path securityPolicyFile() {
 		return Paths.get(".");
 	}
-	
+
+	public static String remoteSocket;
 	public static String judgeFetchSolution() {
-		return "http://localhost:9000/judge/fetch";
+		return remoteSocket + "/judge/fetch";
 	}
-	public static String handleJudgeUpdateResult() {
-		return "http://localhost:9000/judge/update";
+	public static String handleJudgeUpdateResult() { return remoteSocket + "/judge/update"; }
+	public static String getProblemResourcesHash(long id) { return remoteSocket + "/judge/problem/" + id + "/hash.json"; };
+	public static String getProblemResourcesZip(long id) { return remoteSocket + "/judge/problem/" + id + "/package.zip"; };
+
+	public static String runScript() {
+		return "";
 	}
 }
