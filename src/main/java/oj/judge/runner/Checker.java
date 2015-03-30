@@ -1,6 +1,7 @@
 package oj.judge.runner;
 
 import oj.judge.common.Conf;
+import oj.judge.common.Result;
 import oj.judge.common.Solution;
 
 /**
@@ -8,47 +9,37 @@ import oj.judge.common.Solution;
  */
 public class Checker {
 	public static final String label = "Checker::";
-	public void check(Solution solution) {
-		if (solution.judged())
-			return ;
+	public static void check(Result result, double timeLimit, double memoryLimit, String correct) {
 
-		if (solution.error != null && solution.error.length() > 0) {
-			if (solution.error.contains("OutOfMemory"))
-				solution.result = Solution.Result.ML;
+		if (Conf.debug()) System.out.println("time limit: " + timeLimit + ", memory limit: " + memoryLimit);
+		if (Conf.debug()) System.out.println("output  : ----\n" + result.output  + "\n------------");
+		if (Conf.debug()) System.out.println("correct : ----\n" + correct        + "\n------------");
+		if (Conf.debug()) System.out.println("error   : ----\n" + result.error   + "\n------------");
+		if (Conf.debug()) System.out.println("metrics : ----\n" + result.metrics + "\n------------");
+
+		if (result.error != null && result.error.length() > 0) {
+			if (result.error.contains("OutOfMemory"))
+				result.verdict = Result.Verdict.ML;
 			else
-				solution.result = Solution.Result.JE;
+				result.verdict = Result.Verdict.RE;
 			return ;
 		}
 
-		if (solution.runnerResult.has("ERROR")) {
-			String error = solution.runnerResult.getString("ERROR");
+		if (Conf.debug()) System.out.println(label + "time used : " + result.timeUsed);
+		if (Conf.debug()) System.out.println(label + "time limit: " + timeLimit);
 
-			if (Conf.debug()) System.out.println(label + "runtime error: " + error);
-
-			solution.result = Solution.Result.RE;
+		if (result.timeUsed > timeLimit) {
+			result.verdict = Result.Verdict.TL;
 			return ;
 		}
 
-		solution.timeUsed = solution.runnerResult.getLong("TIME") / 1000000000.0;
-
-		if (Conf.debug()) System.out.println(label + "time used : " + solution.timeUsed);
-		if (Conf.debug()) System.out.println(label + "time limit: " + solution.problem.timeLimit);
-
-		if (solution.timeUsed > solution.problem.timeLimit) {
-			solution.result = Solution.Result.TL;
-			return ;
-		}
-
-		if (Conf.debug()) System.out.println(label + "solution output: " + solution.output);
-		if (Conf.debug()) System.out.println(label + "standard output: " + solution.problem.output);
-
-		if (check(solution.output, solution.problem.output))
-			solution.result = Solution.Result.AC;
+		if (check(result.output, correct))
+			result.verdict = Result.Verdict.AC;
 		else
-			solution.result = Solution.Result.WA;
+			result.verdict = Result.Verdict.WA;
 	}
 
-	public boolean check(String p, String s) {
+	public static boolean check(String p, String s) {
 		String[] pl = p.split("\n");
 		String[] sl = s.split("\n");
 
@@ -63,5 +54,10 @@ public class Checker {
 				return false;
 		}
 		return true;
+	}
+
+	public static void getLimit(Result result) {
+		result.timeUsed = 0;
+		result.memoryUsed = 0;
 	}
 }

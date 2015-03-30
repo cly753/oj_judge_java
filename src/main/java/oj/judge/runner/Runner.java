@@ -1,16 +1,10 @@
 package oj.judge.runner;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -20,6 +14,7 @@ import java.util.Map;
 
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
+import oj.judge.common.Result;
 import oj.judge.common.Solution;
 
 import org.json.JSONObject;
@@ -40,30 +35,32 @@ public class Runner extends Thread {
 
 	@Override
 	public void run() {
-		prepare();
-		execute();
-		cleanUp();
-		checker.check(solution);
+		result = solution.result.get(0);
+		compile();
+		if (solution.result.get(0).verdict == Result.Verdict.NONE) {
+			for (int i = 0; i < solution.problem.caseNo; i++) {
+				result = solution.result.get(i);
 
+				judge(i);
+				if (solution.result.get(0).verdict != Result.Verdict.AC)
+					break;
+			}
+		}
+		cleanUp(runningPath);
 		emit(E.FINISH, solution);
 	}
 
 	public Integer id;
 	public Solution solution;
+	public Result result; // for easy access
 
 	public Path runningPath;
 	public Path securityPolicy;
-	public Path inputFile;
-	public Path outputFile;
-	public Path errorFile;
-	public Path resultFile;
 
 	public long timeOut;
 	public int bufferSize;
 
-	public Checker checker;
-
-	public Runner(Integer id, Path runningPath, Solution solution, Checker checker) {
+	public Runner(Integer id, Path runningPath, Solution solution) {
 		this.id = id;
 		this.listener = new HashMap<E, Callback>();
 
@@ -72,143 +69,98 @@ public class Runner extends Thread {
 		
 		this.runningPath = runningPath;
 		this.securityPolicy = Conf.securityPolicyFile();
-		this.inputFile   = Paths.get(runningPath + "/" + "in");
-		this.outputFile  = Paths.get(runningPath + "/" + "out");
-		this.errorFile   = Paths.get(runningPath + "/" + "error");
-		this.resultFile  = Paths.get(runningPath + "/" + id.toString());
 
 		this.solution    = solution;
-		this.checker     = checker;
 	}
 
-	public void prepare() {
-		if (solution.judged())
-			return ;
+	public void judge(int caseNo) {
+		Path input = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/input");
+		Path output = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/output");
+		Path error = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/error");
+		Path metrics = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/metrics");
 
-		try {
-			boolean ok = solution.compileSave(runningPath);
-			if (!ok)
-				solution.result = Solution.Result.CE;
-		} catch (IOException e) {
-			solution.result = Solution.Result.JE;
+		if (!solution.problem.saveInput(caseNo, input)) {
+			result.verdict = Result.Verdict.JE;
+			return ;
 		}
 
 		try {
-			if (solution.judged())
-				return ;
-
-			OpenOption[] options = new OpenOption[] { WRITE, CREATE, TRUNCATE_EXISTING };
-			BufferedWriter writer = Files.newBufferedWriter(inputFile, Charset.forName("US-ASCII"), options);
-			writer.write(solution.problem.input, 0, solution.problem.input.length());
-			writer.close();
-			
-			writer = Files.newBufferedWriter(outputFile, Charset.forName("US-ASCII"), options);
-			writer.close();
-			
-			writer = Files.newBufferedWriter(errorFile, Charset.forName("US-ASCII"), options);
-			writer.close();
+			output.toFile().createNewFile();
+			error.toFile().createNewFile();
+			metrics.toFile().createNewFile();
 		} catch (IOException e) {
 			e.printStackTrace();
-			solution.result = Solution.Result.JE;
-		}
-	}
-	public boolean cleanUp() {
-		boolean ok = true;
-		ok &= delete(inputFile.toFile());
-		ok &= delete(outputFile.toFile());
-		ok &= delete(errorFile.toFile());
-		ok &= delete(resultFile.toFile());
-		ok &= delete(Paths.get(runningPath + "/" + solution.codeClass + ".class").toFile());
-		ok &= delete(Paths.get(runningPath + "/" + "SecureRunner" + ".class").toFile());
-		return ok;
-	}
-	public boolean delete(File f) {
-		return (f.exists() && !f.isDirectory()) ? f.delete() : false;
-	}
-
-	public void execute() {
-		if (solution.judged())
+			result.verdict = Result.Verdict.JE;
 			return ;
-		
-		applyLinux();
-		
-        //
-        // TODO
-        // drop wrapper class
-        //
+		}
 
-		List<String> cmd = Arrays.asList("java"
-				, "-client"
-				, "-Xmx" + (int)(solution.problem.memoryLimit + 10) + "m"
-				, "-Xss64m"
-//				, "-Djava.security.manager"
-//				, "-Djava.security.policy=" + securityPolicy
-				, "-cp"
-				, runningPath.toString()
-//				, solution.codeClass
-				, Solution.secureRunnerClass
-				, resultFile.toString()
-				, securityPolicy.toString()
-				);
-		
-		ProcessBuilder pb = new ProcessBuilder(cmd);
-
-		pb.redirectInput(inputFile.toFile());
-		pb.redirectOutput(outputFile.toFile());
-		pb.redirectError(errorFile.toFile());
+		ProcessBuilder pb = getProcessBuilder(solution.language);
 
 		try {
 			Process p = pb.start();
-			
+
 			Thread.sleep(timeOut);
 			if (p.isAlive()) {
 				p.destroyForcibly();
-				solution.result = Solution.Result.TL;
-			}
-
-			if (solution.judged())
-				return ;
-
-			solution.error = Files.lines(errorFile).reduce("", (a, b) -> a + '\n' + b);
-			if (solution.error.length() > 0) {
-				if (Conf.debug()) System.out.println("error : ----\n" + solution.error  + "\n------------");
-				solution.result = Solution.Result.JE;
-//				solution.result = Solution.Result.RE;
+				result.verdict = Result.Verdict.TL;
 				return ;
 			}
 
-			if (outputFile.toFile().length() > bufferSize) {
-				solution.result = Solution.Result.OL;
+			if (error.toFile().length() > bufferSize || output.toFile().length() > bufferSize) {
+				result.verdict = Result.Verdict.OL;
+				return ;
 			}
 			else {
-				solution.output = Files.lines(outputFile).reduce("", (a, b) -> a + '\n' + b);
-				solution.runnerResult = new JSONObject(Files.lines(resultFile).reduce("", String::concat));
+				result.output = Files.lines(output).reduce("", (a, b) -> a + '\n' + b);
+				result.error = Files.lines(error).reduce("", (a, b) -> a + '\n' + b);
+				result.metrics = Files.lines(metrics).reduce("", (a, b) -> a + '\n' + b);
 			}
 
-			if (Conf.debug()) System.out.println("output: ----\n" + solution.output + "\n------------");
-
+			Checker.check(result, solution.problem.timeLimit, solution.problem.memoryLimit, solution.problem.output.get(caseNo));
 		} catch (IOException e) {
 			e.printStackTrace();
-			solution.result = Solution.Result.JE;
+			result.verdict = Result.Verdict.JE;
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			solution.result = Solution.Result.JE;
+			result.verdict = Result.Verdict.JE;
 		}
 	}
-	
-	public String readBR(BufferedReader br) throws IOException {
-		char[] buffer = new char[bufferSize];
-		int actualRead = br.read(buffer, 0, bufferSize);
-		if (actualRead == -1)
-			return "";
-		else
-			return new String(buffer, 0, actualRead);
+
+	public void compile() {
+		try {
+			boolean ok = Compiler.compile(solution.language, solution.code, runningPath);
+			if (!ok)
+				result.verdict = Result.Verdict.CE;
+		} catch (IOException e) {
+			result.verdict = Result.Verdict.JE;
+		}
 	}
-	
-	public void applyLinux() {
-        //
-        // TODO
-        // drop wrapper class
-        //
+
+	public ProcessBuilder getProcessBuilder(Solution.Language language) {
+//		List<String> cmd = Arrays.asList("java"
+//				, "-client"
+//				, "-Xmx" + (int) (solution.problem.memoryLimit + 10) + "m"
+//				, "-Xss64m"
+////				, "-Djava.security.manager"
+////				, "-Djava.security.policy=" + securityPolicy
+//				, "-cp"
+//				, runningPath.toString()
+//				, solution.codeClass
+//		);
+
+		ProcessBuilder pb = new ProcessBuilder(Conf.runScript());
+
+		return pb;
+	}
+
+	public void cleanUp(Path path) {
+		for (File f : path.toFile().listFiles())
+			delete(f);
+	}
+	public void delete(File f) {
+		if (f.isDirectory())
+			for (File ff : f.listFiles())
+				delete(f);
+		f.delete();
 	}
 }

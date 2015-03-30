@@ -4,6 +4,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
 
+@Deprecated
 public class Watchcat extends Thread {
 	public Date lastTime;
 	public Long timeOut;
