@@ -38,7 +38,7 @@ public class Runner extends Thread {
 		result = solution.result.get(0);
 		compile();
 		if (solution.result.get(0).verdict == Result.Verdict.NONE) {
-			for (int i = 0; i < solution.problem.caseNo; i++) {
+			for (int i = 0; i < solution.problem.totalCase; i++) {
 				result = solution.result.get(i);
 
 				judge(i);
@@ -102,12 +102,12 @@ public class Runner extends Thread {
 			return ;
 		}
 
-		ProcessBuilder pb = getProcessBuilder(solution.language, executable, input, output, error, metrics);
+		ProcessBuilder pb = getProcessBuilder(solution.language, input, output, error, metrics);
 
 		try {
 			Process p = pb.start();
 
-			Thread.sleep(solution.problem.timeLimit + timeOut);
+			Thread.sleep((long) (solution.problem.timeLimit + timeOut));
 			if (p.isAlive()) {
 				p.destroyForcibly();
 				result.verdict = Result.Verdict.TL;
@@ -150,9 +150,14 @@ public class Runner extends Thread {
 			return ;
 		}
 
-		boolean ok = Compiler.compile(solution.language, source, out, compileOut, compileError);
-		if (!ok)
-			result.verdict = Result.Verdict.CE;
+		try {
+			boolean ok = Compiler.compile(solution.language, source, executable, compileOut, compileError);
+			if (!ok)
+				result.verdict = Result.Verdict.CE;
+		} catch (IOException e) {
+			e.printStackTrace();
+			result.verdict = Result.Verdict.JE;
+		}
 	}
 
 	public ProcessBuilder getProcessBuilder(Solution.Language language, Path input, Path output, Path error, Path metrics) {
@@ -165,7 +170,7 @@ public class Runner extends Thread {
 				scriptPath = scriptPath + "/JAVA.sh";
 				break;
 			default:
-				return false;
+				return null;
 		}
 
 		return new ProcessBuilder(

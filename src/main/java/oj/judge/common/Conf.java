@@ -30,7 +30,8 @@ public class Conf {
 	}
 	
 	public static Path runningPath() {
-		return Paths.get("C:/Users/" + System.getProperty("user.name") + "/Desktop");
+//		return Paths.get("C:/Users/" + System.getProperty("user.name") + "/Desktop");
+		return Paths.get("~/Desktop");
 	}
 	
 	public static boolean debug() {

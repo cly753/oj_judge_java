@@ -27,7 +27,7 @@ public class Problem {
     public double timeLimit; // in ms. 0 for not specified.
     public double memoryLimit; // in MB. 0 for not specified.
 
-    public int caseNo;
+    public int totalCase;
 
     public Problem(Long id, byte[] problemResourcesZip, double timeLimit, double memoryLimit, String resourcesHash, boolean specialJudge) {
         this.id = id;
@@ -44,7 +44,7 @@ public class Problem {
         input  = new ArrayList<String>();
         output = new ArrayList<String>();
         problemResourcesZip = null;
-        caseNo = 1;
+        totalCase = 1;
     }
 
     public boolean saveInput(int caseNo, Path path) {

@@ -1,24 +1,18 @@
 package oj.judge.common;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
-
-import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 
 public class Solution {
@@ -32,8 +26,9 @@ public class Solution {
     // Used by judge
     public Language language = Language.JAVA;
     public final String codeClass = "Main";
-    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
-
+//    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
+    public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { cout << 1234 << endl; }";
+    
     // Used by judge
     public Date receiveTime;
     public Date judgeTime;

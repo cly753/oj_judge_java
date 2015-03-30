@@ -2,9 +2,11 @@ package oj.judge.runner;
 
 import oj.judge.common.Conf;
 import oj.judge.common.Solution;
+
 import org.apache.commons.io.IOUtils;
 
 import javax.tools.*;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,12 +39,17 @@ public class Compiler {
                 compileError.toString()
         );
         Process p = pb.start();
-        int returnCode = p.waitFor();
+		try {
+			int returnCode = p.waitFor();
 
-        if (returnCode == 0)
-            return true;
-        else
-            return false;
+	        if (returnCode == 0)
+	            return true;
+	        else
+	            return false;
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return false;
+		}
     }
 
 //SOURCE=$1
