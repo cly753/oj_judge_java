@@ -51,6 +51,20 @@ public class Solution {
 		return ret;
 	}
 
+	public boolean saveSource(Path path) {
+		try {
+			OpenOption[] options = new OpenOption[] { WRITE, CREATE, TRUNCATE_EXISTING };
+			BufferedWriter writer = Files.newBufferedWriter(path, Charset.forName("US-ASCII"), options);
+			writer.write(code, 0, code.length());
+			writer.close();
+
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	public boolean judged(int caseNo) {
 		return result.get(caseNo).verdict != Result.Verdict.NONE;
 	}

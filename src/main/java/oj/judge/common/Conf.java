@@ -61,7 +61,13 @@ public class Conf {
 	public static String getProblemResourcesHash(long id) { return remoteSocket + "/judge/problem/" + id + "/hash.json"; };
 	public static String getProblemResourcesZip(long id) { return remoteSocket + "/judge/problem/" + id + "/package.zip"; };
 
+	public static String compileScript() {
+		return "./compile-script";
+	}
+	public static String compileName() {
+		return "1";
+	}
 	public static String runScript() {
-		return "";
+		return "./run-script";
 	}
 }

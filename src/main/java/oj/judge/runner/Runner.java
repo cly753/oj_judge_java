@@ -55,6 +55,7 @@ public class Runner extends Thread {
 	public Result result; // for easy access
 
 	public Path runningPath;
+	public Path executable;
 	public Path securityPolicy;
 
 	public long timeOut;
@@ -68,6 +69,7 @@ public class Runner extends Thread {
 		this.bufferSize = Conf.bufferSize();
 		
 		this.runningPath = runningPath;
+		this.executable = Paths.get(runningPath + "/" + solution.id + "/1");
 		this.securityPolicy = Conf.securityPolicyFile();
 
 		this.solution    = solution;
@@ -78,6 +80,12 @@ public class Runner extends Thread {
 		Path output = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/output");
 		Path error = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/error");
 		Path metrics = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/metrics");
+
+//EXE=$1
+//INFILE=$2
+//OUTFILE=$3
+//ERRORFILE=$4
+//TIMEOUT=$5
 
 		if (!solution.problem.saveInput(caseNo, input)) {
 			result.verdict = Result.Verdict.JE;
@@ -94,12 +102,12 @@ public class Runner extends Thread {
 			return ;
 		}
 
-		ProcessBuilder pb = getProcessBuilder(solution.language);
+		ProcessBuilder pb = getProcessBuilder(solution.language, executable, input, output, error, metrics);
 
 		try {
 			Process p = pb.start();
 
-			Thread.sleep(timeOut);
+			Thread.sleep(solution.problem.timeLimit + timeOut);
 			if (p.isAlive()) {
 				p.destroyForcibly();
 				result.verdict = Result.Verdict.TL;
@@ -127,30 +135,47 @@ public class Runner extends Thread {
 	}
 
 	public void compile() {
-		try {
-			boolean ok = Compiler.compile(solution.language, solution.code, runningPath);
-			if (!ok)
-				result.verdict = Result.Verdict.CE;
-		} catch (IOException e) {
+		Path source = Paths.get(runningPath + "/" + solution.id + "/source");
+		executable = executable;
+		Path compileOut = Paths.get(runningPath + "/" + solution.id + "/compileOut");
+		Path compileError = Paths.get(runningPath + "/" + solution.id + "/compileError");
+
+//SOURCE=$1
+//OUT=$2
+//COMOUT=$3
+//COMERROR=$4
+
+		if (!solution.saveSource(source)) {
 			result.verdict = Result.Verdict.JE;
+			return ;
 		}
+
+		boolean ok = Compiler.compile(solution.language, source, out, compileOut, compileError);
+		if (!ok)
+			result.verdict = Result.Verdict.CE;
 	}
 
-	public ProcessBuilder getProcessBuilder(Solution.Language language) {
-//		List<String> cmd = Arrays.asList("java"
-//				, "-client"
-//				, "-Xmx" + (int) (solution.problem.memoryLimit + 10) + "m"
-//				, "-Xss64m"
-////				, "-Djava.security.manager"
-////				, "-Djava.security.policy=" + securityPolicy
-//				, "-cp"
-//				, runningPath.toString()
-//				, solution.codeClass
-//		);
+	public ProcessBuilder getProcessBuilder(Solution.Language language, Path input, Path output, Path error, Path metrics) {
+		String scriptPath = Conf.runScript();
+		switch (language) {
+			case CPP:
+				scriptPath = scriptPath + "/CPP.sh";
+				break;
+			case JAVA:
+				scriptPath = scriptPath + "/JAVA.sh";
+				break;
+			default:
+				return false;
+		}
 
-		ProcessBuilder pb = new ProcessBuilder(Conf.runScript());
-
-		return pb;
+		return new ProcessBuilder(
+				scriptPath,
+				executable.toString(),
+				input.toString(),
+				output.toString(),
+				error.toString(),
+				metrics.toString()
+		);
 	}
 
 	public void cleanUp(Path path) {
