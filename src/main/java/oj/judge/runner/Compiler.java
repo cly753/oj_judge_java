@@ -1,32 +1,36 @@
 package oj.judge.runner;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import oj.judge.common.Conf;
 import oj.judge.common.Solution;
-
-import org.apache.commons.io.IOUtils;
-
-import javax.tools.*;
-
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Locale;
 
 /**
  * Created by t_chenli on 3/30/2015.
  */
 public class Compiler {
     public static boolean compile(Solution.Language language, Path source, Path out, Path compileOut, Path compileError) throws IOException {
-        String scriptPath = Conf.compileScript();
+        String scriptPath = Conf.compileScript().toAbsolutePath().toString();
+        String suffix;
+        
+        if (Conf.debug()) System.out.println(System.getProperty("os.name"));
+
+        if (System.getProperty("os.name").contains("Windows")) {
+        	suffix = ".bat";
+        	out = Paths.get(out.toAbsolutePath() + ".exe");
+        }
+        else {
+        	suffix = ".sh";
+        }
+        
         switch (language) {
             case CPP:
-                scriptPath = scriptPath + "/CPP.sh";
+                scriptPath = scriptPath + "/CPP" + suffix;
                 break;
             case JAVA:
-                scriptPath = scriptPath + "/JAVA.sh";
+                scriptPath = scriptPath + "/JAVA.sh" + suffix;
                 break;
             default:
                 return false;

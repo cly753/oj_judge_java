@@ -43,7 +43,10 @@ public class Problem {
         input  = new ArrayList<String>();
         output = new ArrayList<String>();
         problemResourcesZip = null;
+        
         totalCase = 1;
+        
+        // http://www.oracle.com/technetwork/articles/java/compress-1565076.html
     }
 
     public boolean saveInput(int caseNo, Path path) {

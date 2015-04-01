@@ -1,7 +1,10 @@
 package oj.judge.runner;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +32,10 @@ public class Runner extends Thread {
 
 	@Override
 	public void run() {
+		if (runningPath.toFile().exists())
+			cleanUp(runningPath);
+		runningPath.toFile().mkdir();
+
 		result = solution.result.get(0);
 		compile();
 		if (solution.result.get(0).verdict == Result.Verdict.NONE) {
@@ -61,25 +68,31 @@ public class Runner extends Thread {
 
 		this.timeOut = Conf.timeOut();
 		this.bufferSize = Conf.bufferSize();
-		
-		this.runningPath = runningPath;
-		this.executable = Paths.get(runningPath + "/" + solution.id + "/1");
+
+		this.runningPath = Paths.get(runningPath + "/" + solution.id);
+		this.executable = Paths.get(this.runningPath + "/" + Conf.compileName());
+				
 		this.securityPolicy = Conf.securityPolicyFile();
 
 		this.solution    = solution;
 	}
 
 	public void judge(int caseNo) {
-		Path input = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/input");
-		Path output = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/output");
-		Path error = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/error");
-		Path metrics = Paths.get(runningPath + "/" + solution.id + "/" + caseNo + "/metrics");
+		Path casePath = Paths.get(runningPath + "/" + (1 + caseNo));
+		if (casePath.toFile().exists())
+			cleanUp(casePath);
+		casePath.toFile().mkdir();
 
-//EXE=$1
-//INFILE=$2
-//OUTFILE=$3
-//ERRORFILE=$4
-//TIMEOUT=$5
+		Path input = Paths.get(   casePath + "/input"   );
+		Path output = Paths.get(  casePath + "/output"  );
+		Path error = Paths.get(   casePath + "/error"   );
+		Path metrics = Paths.get( casePath + "/metrics" );
+
+		//EXE=$1
+		//INFILE=$2
+		//OUTFILE=$3
+		//ERRORFILE=$4
+		//TIMEOUT=$5
 
 		if (!solution.problem.saveInput(caseNo, input)) {
 			result.verdict = Result.Verdict.JE;
@@ -97,11 +110,16 @@ public class Runner extends Thread {
 		}
 
 		ProcessBuilder pb = getProcessBuilder(solution.language, input, output, error, metrics);
-
+		
+		if (Conf.debug()) System.out.println(label + "ProcessBuilder...");
+		if (Conf.debug()) for (String s : pb.command()) System.out.print(s + " ");
+		if (Conf.debug()) System.out.println();
+		
 		try {
 			Process p = pb.start();
 
 			Thread.sleep((long) (solution.problem.timeLimit + timeOut));
+			
 			if (p.isAlive()) {
 				p.destroyForcibly();
 				result.verdict = Result.Verdict.TL;
@@ -113,9 +131,19 @@ public class Runner extends Thread {
 				return ;
 			}
 			else {
-				result.output = Files.lines(output).reduce("", (a, b) -> a + '\n' + b);
-				result.error = Files.lines(error).reduce("", (a, b) -> a + '\n' + b);
-				result.metrics = Files.lines(metrics).reduce("", (a, b) -> a + '\n' + b);
+				
+				Charset charset;
+				if (System.getProperty("os.name").contains("Windows")) {
+					charset = Charset.forName("windows-1252");
+					// http://stackoverflow.com/questions/1835430/byte-order-mark-screws-up-file-reading-in-java/7390288#7390288
+				}
+				else {
+					charset = Charset.defaultCharset();
+				}
+				
+				result.output = Files.lines(output, charset).reduce("", (a, b) -> a + '\n' + b);
+				result.error = Files.lines(error, charset).reduce("", (a, b) -> a + '\n' + b);
+				result.metrics = Files.lines(metrics, charset).reduce("", (a, b) -> a + '\n' + b);
 			}
 
 			Checker.check(result, solution.problem.timeLimit, solution.problem.memoryLimit, solution.problem.output.get(caseNo));
@@ -129,15 +157,15 @@ public class Runner extends Thread {
 	}
 
 	public void compile() {
-		Path source = Paths.get(runningPath + "/" + solution.id + "/source");
+		Path source = Paths.get(runningPath + "/source");
 		executable = executable;
-		Path compileOut = Paths.get(runningPath + "/" + solution.id + "/compileOut");
-		Path compileError = Paths.get(runningPath + "/" + solution.id + "/compileError");
+		Path compileOut = Paths.get(runningPath + "/compileOut");
+		Path compileError = Paths.get(runningPath + "/compileError");
 
-//SOURCE=$1
-//OUT=$2
-//COMOUT=$3
-//COMERROR=$4
+		//SOURCE=$1
+		//OUT=$2
+		//COMOUT=$3
+		//COMERROR=$4
 
 		if (!solution.saveSource(source)) {
 			result.verdict = Result.Verdict.JE;
@@ -145,7 +173,13 @@ public class Runner extends Thread {
 		}
 
 		try {
-			boolean ok = Compiler.compile(solution.language, source, executable, compileOut, compileError);
+			boolean ok = Compiler.compile(
+					solution.language,
+					source.toAbsolutePath(),
+					executable.toAbsolutePath(),
+					compileOut.toAbsolutePath(),
+					compileError.toAbsolutePath()
+					);
 			if (!ok)
 				result.verdict = Result.Verdict.CE;
 		} catch (IOException e) {
@@ -155,26 +189,39 @@ public class Runner extends Thread {
 	}
 
 	public ProcessBuilder getProcessBuilder(Solution.Language language, Path input, Path output, Path error, Path metrics) {
-		String scriptPath = Conf.runScript();
+		String scriptPath = Conf.runScript().toAbsolutePath().toString();
+		String suffixBat;
+		String suffixExe;
+		if (Conf.debug()) System.out.println(System.getProperty("os.name"));
+
+		if (System.getProperty("os.name").contains("Windows")) {
+			suffixBat = ".bat";
+			suffixExe = ".exe";
+		}
+		else {
+			suffixBat = ".sh";
+			suffixExe = "";
+		}
+
 		switch (language) {
-			case CPP:
-				scriptPath = scriptPath + "/CPP.sh";
-				break;
-			case JAVA:
-				scriptPath = scriptPath + "/JAVA.sh";
-				break;
-			default:
-				return null;
+		case CPP:
+			scriptPath = scriptPath + "/CPP" + suffixBat;
+			break;
+		case JAVA:
+			scriptPath = scriptPath + "/JAVA" + suffixBat;
+			break;
+		default:
+			return null;
 		}
 
 		return new ProcessBuilder(
 				scriptPath,
-				executable.toString(),
-				input.toString(),
-				output.toString(),
-				error.toString(),
-				metrics.toString()
-		);
+				executable.toAbsolutePath().toString() + suffixExe,
+				input.toAbsolutePath().toString(),
+				output.toAbsolutePath().toString(),
+				error.toAbsolutePath().toString(),
+				metrics.toAbsolutePath().toString()
+				);
 	}
 
 	public void cleanUp(Path path) {
@@ -183,8 +230,11 @@ public class Runner extends Thread {
 	}
 	public void delete(File f) {
 		if (f.isDirectory())
-			for (File ff : f.listFiles())
-				delete(f);
-		f.delete();
+			for (File ff : f.listFiles()) {
+				if (Conf.debug()) System.out.println("deleting " + ff.getAbsolutePath() + "...");
+//				delete(ff);
+			}
+		if (Conf.debug()) System.out.println("deleting " + f.getAbsolutePath() + "...");
+//		f.delete();
 	}
 }

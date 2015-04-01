@@ -10,12 +10,15 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.json.JSONObject;
 
 public class Solution {
+	private static final String label = "Solution::";
+	
 	public enum Language { JAVA, CPP };
 
 	public Long id;
@@ -24,7 +27,7 @@ public class Solution {
 	public List<Result> result;
 	
     // Used by judge
-    public Language language = Language.JAVA;
+    public Language language;
     public final String codeClass = "Main";
 //    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
     public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { cout << 1234 << endl; }";
@@ -34,9 +37,7 @@ public class Solution {
     public Date judgeTime;
     
     public Solution() {
-		//
-		// TODO
-		// 
+    	result = new ArrayList<Result>();
     }
         
 	public String toString() {
@@ -47,6 +48,9 @@ public class Solution {
 	}
 
 	public boolean saveSource(Path path) {
+		if (Conf.debug())
+			System.out.println(label + "saveSource " + path);
+		
 		try {
 			OpenOption[] options = new OpenOption[] { WRITE, CREATE, TRUNCATE_EXISTING };
 			BufferedWriter writer = Files.newBufferedWriter(path, Charset.forName("US-ASCII"), options);
@@ -67,5 +71,23 @@ public class Solution {
 	public JSONObject getResultJson() {
 
 		return null;
+	}
+	
+	public static Solution getFakeSolution() {
+		Solution solution = new Solution();
+		solution.language = Language.CPP;
+		
+		Problem problem = new Problem(0L, null, 1, 100, null, false);
+		problem.input.add("1");
+		problem.output.add("2");
+		
+		solution.id = 0L;
+		solution.problemId = 0L;
+		solution.problem = problem;
+		solution.receiveTime = new Date();
+		solution.judgeTime = new Date();
+		solution.result.add(new Result());
+		
+		return solution;
 	}
 }

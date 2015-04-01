@@ -90,7 +90,7 @@ public class Remote extends Thread {
 		if (solution == null)
 			return ;
 
-		byte[] raw = post(new URL(Conf.judgeFetchSolution()), null);
+		byte[] raw = post(Conf.judgeFetchSolution(), null);
 		JSONObject fetched = new JSONObject(new String(raw));
 
 		if (fetched.has("message"))
@@ -114,7 +114,7 @@ public class Remote extends Thread {
 		if (solution == null)
 			return ;
 
-		byte[] raw = post(new URL(Conf.getProblemResourcesZip(solution.problem.id)), null);
+		byte[] raw = post(Conf.getProblemResourcesZip(solution.problem.id), null);
 		if (raw == null)
 			solution = null;
 		else
@@ -134,7 +134,7 @@ public class Remote extends Thread {
 
 	public boolean handleJudgeUpdateResult(Solution solution) throws UnsupportedEncodingException, MalformedURLException {
 		JSONObject toPush = solution.getResultJson();
-		JSONObject res = new JSONObject(new String(post(new URL(Conf.handleJudgeUpdateResult()), URLEncoder.encode(toPush.toString(), "UTF-8"))));
+		JSONObject res = new JSONObject(new String(post(Conf.handleJudgeUpdateResult(), URLEncoder.encode(toPush.toString(), "UTF-8"))));
 		String response = res.getString("data");
 		return true;
 	}

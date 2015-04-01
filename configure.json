@@ -1,1 +1,29 @@
-{}
+{
+    "running_path" : "C:/Users/Liyang/Desktop/judge",
+
+    "debug" : true,
+
+    "fetch_interval" : 2000,
+
+    "buffer_size" : 100000,
+
+    "time_out" : 3000,
+
+    "security_policy_file" : "C:/Users/Liyang/Desktop/security_policy_file",
+
+    "remote_socket" : "http://localhost:9000",
+
+    "judgeFetchSolution" : "/judge/fetch",
+
+    "handleJudgeUpdateResult" : "/judge/update",
+
+    "getProblemResourcesHash" : "/judge/problem/:id/hash.json",
+
+    "getProblemResourcesZip" : "/judge/problem/:id/package.zip",
+
+    "compile_script" : "C:/Users/Liyang/Desktop/judge/compile-script",
+
+    "compile_name" : "1",
+
+    "run_script" : "C:/Users/Liyang/Desktop/judge/run-script"
+}

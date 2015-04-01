@@ -2,6 +2,10 @@ package oj.judge.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +23,6 @@ public class Conf {
 		
 		try {
 			conf = new JSONObject(Files.lines(Paths.get(configurePath)).reduce("", String::concat));
-			remoteSocket = "http://localhost:9000";
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;
@@ -27,47 +30,74 @@ public class Conf {
 		
 		return true;
 	}
-	
+
 	public static Path runningPath() {
-//		return Paths.get("C:/Users/" + System.getProperty("user.name") + "/Desktop");
-		return Paths.get("~/Desktop");
+		return Paths.get(conf.getString("running_path"));
 	}
 	
 	public static boolean debug() {
-		return true;
+		return conf.getBoolean("debug");
 	}
 	
 	public static long fetchInterval() {
-		return 2000;
+		return conf.getLong("fetch_interval");
 	}
 	
 	public static int bufferSize() {
-		return 100000;
+		return conf.getInt("buffer_size");
 	}
 	
 	public static int timeOut() {
-		return 2000;
+		return conf.getInt("time_out");
 	}
 	
 	public static Path securityPolicyFile() {
-		return Paths.get(".");
+		return Paths.get(conf.getString("security_policy_file"));
 	}
 
-	public static String remoteSocket;
-	public static String judgeFetchSolution() {
-		return remoteSocket + "/judge/fetch";
+	public static String getRemoteSocket() {
+		return conf.getString("remote_socket");
+	};
+	public static URL judgeFetchSolution() {
+		try {
+			return new URL(getRemoteSocket() + conf.getString("judgeFetchSolution"));
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
-	public static String handleJudgeUpdateResult() { return remoteSocket + "/judge/update"; }
-	public static String getProblemResourcesHash(long id) { return remoteSocket + "/judge/problem/" + id + "/hash.json"; };
-	public static String getProblemResourcesZip(long id) { return remoteSocket + "/judge/problem/" + id + "/package.zip"; };
+	public static URL handleJudgeUpdateResult() {
+		try {
+			return new URL(getRemoteSocket() + conf.getString("handleJudgeUpdateResult"));
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	public static URL getProblemResourcesHash(long id) { 
+		try {
+			return new URL(getRemoteSocket() + conf.getString("getProblemResourcesHash").replace(":id", "" + id));
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	};
+	public static URL getProblemResourcesZip(long id) {
+		try {
+			return new URL(getRemoteSocket() + conf.getString("getProblemResourcesZip").replace(":id", "" + id));
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	};
 
-	public static String compileScript() {
-		return "./compile-script";
+	public static Path compileScript() {
+		return Paths.get(conf.getString("compile_script"));
 	}
-	public static String compileName() {
-		return "1";
+	public static Path compileName() {
+		return Paths.get(conf.getString("compile_name"));
 	}
-	public static String runScript() {
-		return "./run-script";
+	public static Path runScript() {
+		return Paths.get(conf.getString("run_script"));
 	}
 }
