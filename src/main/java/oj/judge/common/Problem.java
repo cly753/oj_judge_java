@@ -1,17 +1,21 @@
 package oj.judge.common;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
-
-import java.io.BufferedWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.zip.Adler32;
+import java.util.zip.CheckedInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class Problem {
     public Long id;
@@ -43,10 +47,35 @@ public class Problem {
         input  = new ArrayList<String>();
         output = new ArrayList<String>();
         problemResourcesZip = null;
-        
-        totalCase = 1;
-        
-        // http://www.oracle.com/technetwork/articles/java/compress-1565076.html
+        totalCase = 0;
+
+//        try {
+//            final int BUFFER = 2048;
+//            BufferedOutputStream dest = null;
+//            ByteArrayInputStream bais = new ByteArrayInputStream(problemResourcesZip);
+//            CheckedInputStream checksum = new CheckedInputStream(bais, new Adler32());
+//            ZipInputStream zis = new ZipInputStream(new BufferedInputStream(checksum));
+//            ZipEntry entry;
+//            while((entry = zis.getNextEntry()) != null) {
+//                System.out.println("Extracting: " + entry);
+//                int count;
+//                byte data[] = new byte[BUFFER];
+//                // write the files to the disk
+//                FileOutputStream fos = new FileOutputStream(entry.getName());
+//                dest = new BufferedOutputStream(fos, BUFFER);
+//                while ((count = zis.read(data, 0, BUFFER)) != -1) {
+//                    dest.write(data, 0, count);
+//                }
+//                dest.flush();
+//                dest.close();
+//            }
+//            zis.close();
+//            System.out.println("Checksum: " + checksum.getChecksum().getValue());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//
+//            totalCase = 0;
+//        }
     }
 
     public boolean saveInput(int caseNo, Path path) {

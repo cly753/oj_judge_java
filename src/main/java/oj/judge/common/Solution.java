@@ -30,7 +30,7 @@ public class Solution {
     public Language language;
     public final String codeClass = "Main";
 //    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
-    public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { cout << 1234 << endl; }";
+    public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { int a, b; cin >> a >> b; cout << a + b << endl; while (1); return 0; }";
     
     // Used by judge
     public Date receiveTime;
@@ -43,7 +43,7 @@ public class Solution {
 	public String toString() {
 		String ret = "Solution " + id + ":";
 		for (int i = 0; i < result.size(); i++)
-			ret += " result-" + i + ": " + Formatter.toString(result.get(i).verdict);
+			ret += "\n\tresult-" + i + ": " + Formatter.toString(result.get(i).verdict);
 		return ret;
 	}
 
@@ -78,16 +78,21 @@ public class Solution {
 		solution.language = Language.CPP;
 		
 		Problem problem = new Problem(0L, null, 1, 100, null, false);
-		problem.input.add("1");
-		problem.output.add("2");
+		problem.input.add("1 2");
+		problem.output.add("3");
+		problem.input.add("7 7");
+		problem.output.add("14");
+		problem.totalCase = 2;
 		
 		solution.id = 0L;
 		solution.problemId = 0L;
 		solution.problem = problem;
 		solution.receiveTime = new Date();
 		solution.judgeTime = new Date();
-		solution.result.add(new Result());
-		
+
+		for (int i = 0; i < problem.totalCase; i++)
+			solution.result.add(new Result());
+
 		return solution;
 	}
 }

@@ -18,7 +18,7 @@ public class Remote extends Thread {
 	private static final String label = "Remote::";
 	
 	public enum E { NEWPROBLEM, ERROR };
-	public Map<E, Callback> listener;
+	public Map<E, Callback> listener = new HashMap<E, Callback>();;
 	
 	public void reg(E e, Callback c) {
 		listener.put(e, c);
@@ -31,7 +31,6 @@ public class Remote extends Thread {
 	public long fetchInterval;
 	
 	public Remote(long interval) {
-		this.listener = new HashMap<E, Callback>();
 		this.fetchInterval = interval;
 	}
 
@@ -43,9 +42,8 @@ public class Remote extends Thread {
 			con.setRequestMethod("POST");
 			con.setUseCaches(false);
 
-			con.setDoOutput(true);
-
 			if (data != null) {
+				con.setDoOutput(true);
 				DataOutputStream dos = new DataOutputStream(con.getOutputStream());
 				dos.writeBytes(data);
 				dos.flush(); dos.close();
@@ -91,6 +89,9 @@ public class Remote extends Thread {
 			return ;
 
 		byte[] raw = post(Conf.judgeFetchSolution(), null);
+
+		if (Conf.debug()) System.out.println(label + "judgeFetchSolution: " + new String(raw));
+
 		JSONObject fetched = new JSONObject(new String(raw));
 
 		if (fetched.has("message"))
@@ -145,10 +146,6 @@ public class Remote extends Thread {
 	
 	@Override
 	public void run() {
-		//
-		// TODO
-		//
-		
 		Solution solution = getSolution();
 		if (solution != null)
 			emit(E.NEWPROBLEM, solution);

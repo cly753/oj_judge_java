@@ -71,7 +71,7 @@ public class Runner extends Thread {
 
 		this.runningPath = Paths.get(runningPath + "/" + solution.id);
 		this.executable = Paths.get(this.runningPath + "/" + Conf.compileName());
-				
+
 		this.securityPolicy = Conf.securityPolicyFile();
 
 		this.solution    = solution;
@@ -109,51 +109,87 @@ public class Runner extends Thread {
 			return ;
 		}
 
+
 		ProcessBuilder pb = getProcessBuilder(solution.language, input, output, error, metrics);
-		
-		if (Conf.debug()) System.out.println(label + "ProcessBuilder...");
+
+		if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
 		if (Conf.debug()) for (String s : pb.command()) System.out.print(s + " ");
 		if (Conf.debug()) System.out.println();
-		
+
+		Process p = null;
 		try {
-			Process p = pb.start();
-
-			Thread.sleep((long) (solution.problem.timeLimit + timeOut));
-			
-			if (p.isAlive()) {
-				p.destroyForcibly();
-				result.verdict = Result.Verdict.TL;
-				return ;
-			}
-
-			if (error.toFile().length() > bufferSize || output.toFile().length() > bufferSize) {
-				result.verdict = Result.Verdict.OL;
-				return ;
-			}
-			else {
-				
-				Charset charset;
-				if (System.getProperty("os.name").contains("Windows")) {
-					charset = Charset.forName("windows-1252");
-					// http://stackoverflow.com/questions/1835430/byte-order-mark-screws-up-file-reading-in-java/7390288#7390288
-				}
-				else {
-					charset = Charset.defaultCharset();
-				}
-				
-				result.output = Files.lines(output, charset).reduce("", (a, b) -> a + '\n' + b);
-				result.error = Files.lines(error, charset).reduce("", (a, b) -> a + '\n' + b);
-				result.metrics = Files.lines(metrics, charset).reduce("", (a, b) -> a + '\n' + b);
-			}
-
-			Checker.check(result, solution.problem.timeLimit, solution.problem.memoryLimit, solution.problem.output.get(caseNo));
+			p = pb.start();
 		} catch (IOException e) {
 			e.printStackTrace();
 			result.verdict = Result.Verdict.JE;
+			return ;
+		}
+
+		try {
+			Runner runnerHandle = this;
+			Thread watcher = new Thread() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep((long) (solution.problem.timeLimit + timeOut));
+						runnerHandle.interrupt();
+					} catch (InterruptedException e) {
+						return;
+					}
+				}
+			};
+			watcher.start();
+			p.waitFor();
+			watcher.interrupt();
 		} catch (InterruptedException e) {
+			if (Conf.debug()) System.out.println(label + "Runner interrupted due to timeout.");
+			p.destroyForcibly();
+			try {
+
+				if (System.getProperty("os.name").contains("Windows")) {
+					Runtime.getRuntime().exec("taskkill /F /IM solution.exe");
+				}
+				else {
+
+				}
+
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				result.verdict = Result.Verdict.JE;
+				return ;
+			}
+			result.verdict = Result.Verdict.TL;
+			return ;
+		}
+
+		if (error.toFile().length() > bufferSize || output.toFile().length() > bufferSize) {
+			result.verdict = Result.Verdict.OL;
+			return ;
+		}
+
+		Charset charset;
+
+		if (Conf.debug()) System.out.println(System.getProperty("os.name"));
+
+		if (System.getProperty("os.name").contains("Windows")) {
+//					charset = Charset.forName("windows-1252");
+			charset = Charset.forName("utf-16");
+		}
+		else {
+			charset = Charset.defaultCharset();
+		}
+
+		try {
+			result.output = new String(Files.readAllBytes(output), charset);
+			result.error = new String(Files.readAllBytes(error), charset);
+			result.metrics = new String(Files.readAllBytes(metrics), charset);
+		} catch (IOException e) {
 			e.printStackTrace();
 			result.verdict = Result.Verdict.JE;
+			return ;
 		}
+
+		Checker.check(result, solution.problem.timeLimit, solution.problem.memoryLimit, solution.problem.output.get(caseNo));
 	}
 
 	public void compile() {
@@ -179,7 +215,7 @@ public class Runner extends Thread {
 					executable.toAbsolutePath(),
 					compileOut.toAbsolutePath(),
 					compileError.toAbsolutePath()
-					);
+			);
 			if (!ok)
 				result.verdict = Result.Verdict.CE;
 		} catch (IOException e) {
@@ -190,28 +226,29 @@ public class Runner extends Thread {
 
 	public ProcessBuilder getProcessBuilder(Solution.Language language, Path input, Path output, Path error, Path metrics) {
 		String scriptPath = Conf.runScript().toAbsolutePath().toString();
-		String suffixBat;
+		String suffixScript;
 		String suffixExe;
+
 		if (Conf.debug()) System.out.println(System.getProperty("os.name"));
 
 		if (System.getProperty("os.name").contains("Windows")) {
-			suffixBat = ".bat";
+			suffixScript = ".bat";
 			suffixExe = ".exe";
 		}
 		else {
-			suffixBat = ".sh";
+			suffixScript = ".sh";
 			suffixExe = "";
 		}
 
 		switch (language) {
-		case CPP:
-			scriptPath = scriptPath + "/CPP" + suffixBat;
-			break;
-		case JAVA:
-			scriptPath = scriptPath + "/JAVA" + suffixBat;
-			break;
-		default:
-			return null;
+			case CPP:
+				scriptPath = scriptPath + "/CPP" + suffixScript;
+				break;
+			case JAVA:
+				scriptPath = scriptPath + "/JAVA" + suffixScript;
+				break;
+			default:
+				return null;
 		}
 
 		return new ProcessBuilder(
@@ -221,7 +258,7 @@ public class Runner extends Thread {
 				output.toAbsolutePath().toString(),
 				error.toAbsolutePath().toString(),
 				metrics.toAbsolutePath().toString()
-				);
+		);
 	}
 
 	public void cleanUp(Path path) {

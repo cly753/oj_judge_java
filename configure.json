@@ -1,17 +1,17 @@
 {
-    "running_path" : "C:/Users/Liyang/Desktop/judge",
+    "running_path" : "C:/Users/t_chenli/Desktop/judge",
 
     "debug" : true,
 
     "fetch_interval" : 2000,
 
-    "buffer_size" : 100000,
+    "buffer_size" : 10000,
 
-    "time_out" : 3000,
+    "time_out" : 500,
 
     "security_policy_file" : "C:/Users/Liyang/Desktop/security_policy_file",
 
-    "remote_socket" : "http://localhost:9000",
+    "remote_socket" : "http://stage.orangejudge.com",
 
     "judgeFetchSolution" : "/judge/fetch",
 
@@ -21,9 +21,9 @@
 
     "getProblemResourcesZip" : "/judge/problem/:id/package.zip",
 
-    "compile_script" : "C:/Users/Liyang/Desktop/judge/compile-script",
+    "compile_script" : "./compile-scripts",
 
-    "compile_name" : "1",
+    "compile_name" : "solution",
 
-    "run_script" : "C:/Users/Liyang/Desktop/judge/run-script"
+    "run_script" : "./run-scripts"
 }

@@ -13,24 +13,24 @@ import oj.judge.common.Solution;
 public class Compiler {
     public static boolean compile(Solution.Language language, Path source, Path out, Path compileOut, Path compileError) throws IOException {
         String scriptPath = Conf.compileScript().toAbsolutePath().toString();
-        String suffix;
+        String suffixScript;
         
         if (Conf.debug()) System.out.println(System.getProperty("os.name"));
 
         if (System.getProperty("os.name").contains("Windows")) {
-        	suffix = ".bat";
+        	suffixScript = ".bat";
         	out = Paths.get(out.toAbsolutePath() + ".exe");
         }
         else {
-        	suffix = ".sh";
+        	suffixScript = ".sh";
         }
         
         switch (language) {
             case CPP:
-                scriptPath = scriptPath + "/CPP" + suffix;
+                scriptPath = scriptPath + "/CPP" + suffixScript;
                 break;
             case JAVA:
-                scriptPath = scriptPath + "/JAVA.sh" + suffix;
+                scriptPath = scriptPath + "/JAVA.sh" + suffixScript;
                 break;
             default:
                 return false;

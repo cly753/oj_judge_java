@@ -25,8 +25,9 @@ public class Checker {
 			return ;
 		}
 
-		if (Conf.debug()) System.out.println(label + "time used : " + result.timeUsed);
-		if (Conf.debug()) System.out.println(label + "time limit: " + timeLimit);
+		getLimit(result);
+
+		if (Conf.debug()) System.out.println(label + "time used : " + result.timeUsed + " ( " + timeLimit + " )");
 
 		if (result.timeUsed > timeLimit) {
 			result.verdict = Result.Verdict.TL;
@@ -59,5 +60,17 @@ public class Checker {
 	public static void getLimit(Result result) {
 		result.timeUsed = 0;
 		result.memoryUsed = 0;
+
+		String[] lines = result.metrics.split("\n");
+		if (System.getProperty("os.name").contains("Windows")) {
+			for (String s : lines) {
+				if (s.contains("TotalSeconds")) {
+					result.timeUsed = Double.parseDouble(s.split(":")[1]);
+				}
+			}
+		}
+		else {
+
+		}
 	}
 }
