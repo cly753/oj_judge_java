@@ -70,7 +70,11 @@ public class Checker {
 			}
 		}
 		else {
-
+			for (String s : lines) {
+				if (s.contains("user")) {
+					result.timeUsed = Double.parseDouble(s.substring(s.lastIndexOf('m') + 1, s.lastIndexOf('s')));
+				}
+			}
 		}
 	}
 }

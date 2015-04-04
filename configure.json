@@ -1,17 +1,21 @@
 {
-    "running_path" : "C:/Users/t_chenli/Desktop/judge",
+    "running_path" : "/home/cly/Desktop/judge",
 
     "debug" : true,
 
     "fetch_interval" : 2000,
 
-    "buffer_size" : 10000,
+    "buffer_size" : 1024,
 
     "time_out" : 500,
 
-    "security_policy_file" : "C:/Users/Liyang/Desktop/security_policy_file",
+    "security_policy_file" : "/home/cly/Desktop/judge/security_policy_file",
 
     "remote_socket" : "http://stage.orangejudge.com",
+
+    "judgeAccessName" : "1",
+
+    "judgeAccessSecret" : "JUDGE_SECRET",
 
     "judgeFetchSolution" : "/judge/fetch",
 

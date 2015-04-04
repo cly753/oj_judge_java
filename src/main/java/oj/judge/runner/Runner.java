@@ -1,9 +1,7 @@
 package oj.judge.runner;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,14 +58,14 @@ public class Runner extends Thread {
 	public Path securityPolicy;
 
 	public long timeOut;
-	public int bufferSize;
+	public int outputLimit;
 
 	public Runner(Integer id, Path runningPath, Solution solution) {
 		this.id = id;
 		this.listener = new HashMap<E, Callback>();
 
 		this.timeOut = Conf.timeOut();
-		this.bufferSize = Conf.bufferSize();
+		this.outputLimit = Conf.outputLimit();
 
 		this.runningPath = Paths.get(runningPath + "/" + solution.id);
 		this.executable = Paths.get(this.runningPath + "/" + Conf.compileName());
@@ -75,6 +73,9 @@ public class Runner extends Thread {
 		this.securityPolicy = Conf.securityPolicyFile();
 
 		this.solution    = solution;
+
+		if (!Files.exists(runningPath))
+			runningPath.toFile().mkdirs();
 	}
 
 	public void judge(int caseNo) {
@@ -109,71 +110,88 @@ public class Runner extends Thread {
 			return ;
 		}
 
+		if (false) {
+			Result.Verdict quickVerdict = new Executor(
+					solution.language,
+					solution.problem.timeLimit,
+					solution.problem.memoryLimit,
+					executable,
+					input,
+					output,
+					error,
+					metrics,
+					metrics
+			).execute();
 
-		ProcessBuilder pb = getProcessBuilder(solution.language, input, output, error, metrics);
-
-		if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
-		if (Conf.debug()) for (String s : pb.command()) System.out.print(s + " ");
-		if (Conf.debug()) System.out.println();
-
-		Process p = null;
-		try {
-			p = pb.start();
-		} catch (IOException e) {
-			e.printStackTrace();
-			result.verdict = Result.Verdict.JE;
-			return ;
-		}
-
-		try {
-			Runner runnerHandle = this;
-			Thread watcher = new Thread() {
-				@Override
-				public void run() {
-					try {
-						Thread.sleep((long) (solution.problem.timeLimit + timeOut));
-						runnerHandle.interrupt();
-					} catch (InterruptedException e) {
-						return;
-					}
-				}
-			};
-			watcher.start();
-			p.waitFor();
-			watcher.interrupt();
-		} catch (InterruptedException e) {
-			if (Conf.debug()) System.out.println(label + "Runner interrupted due to timeout.");
-			p.destroyForcibly();
-			try {
-
-				if (System.getProperty("os.name").contains("Windows")) {
-					Runtime.getRuntime().exec("taskkill /F /IM solution.exe");
-				}
-				else {
-
-				}
-
-			} catch (IOException e1) {
-				e1.printStackTrace();
-				result.verdict = Result.Verdict.JE;
+			if (quickVerdict != Result.Verdict.NONE) {
 				return ;
 			}
-			result.verdict = Result.Verdict.TL;
-			return ;
+		}
+		else {
+			ProcessBuilder pb = getProcessBuilder(solution.language, input, output, error, metrics);
+
+			if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
+			if (Conf.debug()) for (String s : pb.command()) System.out.print(s + " ");
+			if (Conf.debug()) System.out.println();
+
+			Process p = null;
+			try {
+				p = pb.start();
+			} catch (IOException e) {
+				e.printStackTrace();
+				result.verdict = Result.Verdict.JE;
+				return;
+			}
+
+			try {
+				final Runner runnerHandle = this;
+				Thread watcher = new Thread() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep((long) (solution.problem.timeLimit + timeOut));
+							runnerHandle.interrupt();
+						} catch (InterruptedException e) {
+							return;
+						}
+					}
+				};
+				watcher.start();
+				p.waitFor();
+				watcher.interrupt();
+			} catch (InterruptedException e) {
+				if (Conf.debug()) System.out.println(label + "Runner interrupted due to timeout.");
+				p.destroyForcibly();
+				try {
+
+					if (System.getProperty("os.name").contains("Windows")) {
+						Runtime.getRuntime().exec("taskkill /F /IM solution.exe");
+					} else {
+
+					}
+
+				} catch (IOException e1) {
+					e1.printStackTrace();
+					result.verdict = Result.Verdict.JE;
+					return;
+				}
+				result.verdict = Result.Verdict.TL;
+				return;
+			}
 		}
 
-		if (error.toFile().length() > bufferSize || output.toFile().length() > bufferSize) {
+		if (Conf.debug()) System.out.println(label + "output size = " + output.toFile().length());
+		if (Conf.debug()) System.out.println(label + "error size = " + error.toFile().length());
+		if (output.toFile().length() >= outputLimit || error.toFile().length() >= outputLimit) {
 			result.verdict = Result.Verdict.OL;
 			return ;
 		}
 
+
 		Charset charset;
-
 		if (Conf.debug()) System.out.println(System.getProperty("os.name"));
-
 		if (System.getProperty("os.name").contains("Windows")) {
-//					charset = Charset.forName("windows-1252");
-			charset = Charset.forName("utf-16");
+			charset = Charset.forName("utf-16"); // "windows-1252"
 		}
 		else {
 			charset = Charset.defaultCharset();
@@ -224,7 +242,7 @@ public class Runner extends Thread {
 		}
 	}
 
-	public ProcessBuilder getProcessBuilder(Solution.Language language, Path input, Path output, Path error, Path metrics) {
+	public ProcessBuilder getProcessBuilder(int language, Path input, Path output, Path error, Path metrics) {
 		String scriptPath = Conf.runScript().toAbsolutePath().toString();
 		String suffixScript;
 		String suffixExe;
@@ -241,10 +259,10 @@ public class Runner extends Thread {
 		}
 
 		switch (language) {
-			case CPP:
+			case Solution.CPP:
 				scriptPath = scriptPath + "/CPP" + suffixScript;
 				break;
-			case JAVA:
+			case Solution.JAVA:
 				scriptPath = scriptPath + "/JAVA" + suffixScript;
 				break;
 			default:
@@ -257,7 +275,8 @@ public class Runner extends Thread {
 				input.toAbsolutePath().toString(),
 				output.toAbsolutePath().toString(),
 				error.toAbsolutePath().toString(),
-				metrics.toAbsolutePath().toString()
+				metrics.toAbsolutePath().toString(),
+				"" + (int)(outputLimit / 1024)
 		);
 	}
 

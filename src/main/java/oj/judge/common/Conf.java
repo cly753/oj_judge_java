@@ -43,7 +43,7 @@ public class Conf {
 		return conf.getLong("fetch_interval");
 	}
 	
-	public static int bufferSize() {
+	public static int outputLimit() {
 		return conf.getInt("buffer_size");
 	}
 	
@@ -58,6 +58,14 @@ public class Conf {
 	public static String getRemoteSocket() {
 		return conf.getString("remote_socket");
 	};
+
+	public static String judgeAccessName() {
+		return conf.getString("judgeAccessName");
+	}
+	public static String judgeAccessSecret() {
+		return conf.getString("judgeAccessSecret");
+	}
+
 	public static URL judgeFetchSolution() {
 		try {
 			return new URL(getRemoteSocket() + conf.getString("judgeFetchSolution"));
@@ -100,4 +108,6 @@ public class Conf {
 	public static Path runScript() {
 		return Paths.get(conf.getString("run_script"));
 	}
+
+
 }

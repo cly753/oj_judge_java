@@ -24,6 +24,23 @@ public class Result {
         error = "";
         verdict = Verdict.NONE;
     }
+
+    public int toInt() {
+        int c = 503;
+        switch (verdict) {
+            case NONE:case QU:case SE: case CJ:case JE: break;
+            case AC: c = 200; break;
+            case PE: c = 301; break;
+            case WA: c = 300; break;
+            case CE: c = 400; break;
+            case RE: c = 401; break;
+            case TL: c = 402; break;
+            case ML: c = 403; break;
+            case OL: c = 404; break;
+            case RF: c = 405; break;
+        }
+        return c;
+    }
 }
 
 // Not Judged (NONE):

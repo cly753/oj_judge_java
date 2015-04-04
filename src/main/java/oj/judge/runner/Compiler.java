@@ -11,7 +11,7 @@ import oj.judge.common.Solution;
  * Created by t_chenli on 3/30/2015.
  */
 public class Compiler {
-    public static boolean compile(Solution.Language language, Path source, Path out, Path compileOut, Path compileError) throws IOException {
+    public static boolean compile(int language, Path source, Path out, Path compileOut, Path compileError) throws IOException {
         String scriptPath = Conf.compileScript().toAbsolutePath().toString();
         String suffixScript;
         
@@ -26,10 +26,10 @@ public class Compiler {
         }
         
         switch (language) {
-            case CPP:
+            case Solution.CPP:
                 scriptPath = scriptPath + "/CPP" + suffixScript;
                 break;
-            case JAVA:
+            case Solution.JAVA:
                 scriptPath = scriptPath + "/JAVA.sh" + suffixScript;
                 break;
             default:

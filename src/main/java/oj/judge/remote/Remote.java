@@ -5,6 +5,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,41 +34,6 @@ public class Remote extends Thread {
 	public Remote(long interval) {
 		this.fetchInterval = interval;
 	}
-
-	public byte[] post(URL url, String data) {
-		try {
-			if (Conf.debug()) System.out.println(label + url);
-
-			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			con.setRequestMethod("POST");
-			con.setUseCaches(false);
-
-			if (data != null) {
-				con.setDoOutput(true);
-				DataOutputStream dos = new DataOutputStream(con.getOutputStream());
-				dos.writeBytes(data);
-				dos.flush(); dos.close();
-			}
-
-			int responseCode = con.getResponseCode();
-			if (Conf.debug()) System.out.println(label + "response code = " + responseCode);
-
-			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-			BufferedInputStream bis = new BufferedInputStream(con.getInputStream());
-			int c; byte[] temp = new byte[512];
-			while ((c = bis.read(temp, 0, 512)) != -1)
-				buffer.write(temp, 0, c);
-
-			temp = buffer.toByteArray();
-			bis.close(); buffer.close();
-			return temp;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
 	
 	public Solution getSolution() {
 		Solution solution = new Solution();
@@ -78,31 +44,38 @@ public class Remote extends Thread {
 			solution.receiveTime = new Date();
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
-
+			solution = null;
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
 			solution = null;
 		}
 		return solution;
 	}
 
-	public void judgeFetchSolution(Solution solution) throws MalformedURLException {
+	public void judgeFetchSolution(Solution solution) throws MalformedURLException, UnsupportedEncodingException {
 		if (solution == null)
 			return ;
 
-		byte[] raw = post(Conf.judgeFetchSolution(), null);
+		JSONObject data = new JSONObject();
+		data.put("languages", Arrays.asList("20"));
+
+		HashMap<String, String> header = new HashMap<String, String>();
+		header.put("Content-type", "application/json");
+		byte[] raw = post(Conf.judgeFetchSolution(), data.toString(), header);
 
 		if (Conf.debug()) System.out.println(label + "judgeFetchSolution: " + new String(raw));
 
-		JSONObject fetched = new JSONObject(new String(raw));
-
-		if (fetched.has("message"))
+		JSONObject res = new JSONObject(new String(raw));
+		int resStatus = res.getInt("status");
+		JSONObject resData = res.getJSONObject("data");
+		if (res.has("message"))
 			solution = null;
 		else {
-			solution.id = fetched.getLong("solution");
-			solution.problemId = fetched.getLong("problem");
-			solution.problem.resourcesHash = fetched.getString("problem_hash");
-			solution.code = fetched.getString("code");
-//			solution.language = fetched.getInt("language");
-			solution.language = Solution.Language.JAVA;
+			solution.id = resData.getLong("solution");
+			solution.problemId = resData.getLong("problem");
+			solution.problem.resourcesHash = resData.getString("problem_hash");
+			solution.code = resData.getString("code");
+			solution.language = resData.getInt("language");
 		}
 	}
 
@@ -115,7 +88,7 @@ public class Remote extends Thread {
 		if (solution == null)
 			return ;
 
-		byte[] raw = post(Conf.getProblemResourcesZip(solution.problem.id), null);
+		byte[] raw = post(Conf.getProblemResourcesZip(solution.problem.id), null, null);
 		if (raw == null)
 			solution = null;
 		else
@@ -135,11 +108,62 @@ public class Remote extends Thread {
 
 	public boolean handleJudgeUpdateResult(Solution solution) throws UnsupportedEncodingException, MalformedURLException {
 		JSONObject toPush = solution.getResultJson();
-		JSONObject res = new JSONObject(new String(post(Conf.handleJudgeUpdateResult(), URLEncoder.encode(toPush.toString(), "UTF-8"))));
-		String response = res.getString("data");
+		if (Conf.debug()) System.out.println(label + "toPush: " + toPush.toString());
+
+		HashMap<String, String> header = new HashMap<String, String>();
+		header.put("Content-type", "application/json");
+		JSONObject res = new JSONObject(new String(post(Conf.handleJudgeUpdateResult(), URLEncoder.encode(toPush.toString(), "UTF-8"), header)));
+
+		if (Conf.debug()) System.out.println(label + "handleJudgeUpdateResult: " + res.toString());
 		return true;
 	}
-	
+
+	public byte[] post(URL url, String data, Map<String, String> header) {
+		try {
+			url = new URL(url.toString() + "?" + "judge=" + Conf.judgeAccessName() + "&secret=" + Conf.judgeAccessSecret());
+			if (Conf.debug()) System.out.println(label + url);
+
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+			if (header != null) {
+				for (Map.Entry<String, String> h : header.entrySet()) {
+					con.setRequestProperty(h.getKey(), h.getValue());
+				}
+			}
+			con.setRequestMethod("POST");
+			con.setUseCaches(false);
+
+			if (Conf.debug()) System.out.println(label + "data: " + data);
+			if (data != null) {
+				con.setDoOutput(true);
+				DataOutputStream dos = new DataOutputStream(con.getOutputStream());
+				dos.writeBytes(data);
+				dos.flush(); dos.close();
+			}
+
+			int responseCode = con.getResponseCode();
+			if (Conf.debug()) System.out.println(label + "response code = " + responseCode);
+
+			if (responseCode == 400)
+				return null;
+
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			BufferedInputStream bis = new BufferedInputStream(con.getInputStream());
+			int c; byte[] temp = new byte[512];
+			while ((c = bis.read(temp, 0, 512)) != -1)
+				buffer.write(temp, 0, c);
+
+			temp = buffer.toByteArray();
+			bis.close(); buffer.close();
+			return temp;
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	public void terminate() {
 		this.interrupt();
 	}
