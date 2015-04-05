@@ -22,9 +22,15 @@ public class Checker {
 			return ;
 		}
 
-		getLimit(result);
+		parseMetrics(result);
 
-		if (Conf.debug()) System.out.println(label + "time used : " + result.timeUsed + " ( " + timeLimit + " )");
+		if (Conf.debug()) System.out.println(label + "time   used : " + result.timeUsed   + " ms ( " + timeLimit   + " ms )");
+		if (Conf.debug()) System.out.println(label + "memory used : " + result.memoryUsed + " KBytes ( " + memoryLimit + " KBytes )");
+
+		if (result.memoryUsed > memoryLimit) {
+			result.verdict = Result.Verdict.ML;
+			return ;
+		}
 
 		if (result.timeUsed > timeLimit) {
 			result.verdict = Result.Verdict.TL;
@@ -54,24 +60,24 @@ public class Checker {
 		return true;
 	}
 
-	public static void getLimit(Result result) {
+	public static void parseMetrics(Result result) {
 		result.timeUsed = 0;
 		result.memoryUsed = 0;
 
-		String[] lines = result.metrics.split("\n");
-		if (System.getProperty("os.name").contains("Windows")) {
-			for (String s : lines) {
-				if (s.contains("TotalSeconds")) {
-					result.timeUsed = (int)(1000 * Double.parseDouble(s.split(":")[1]));
-				}
-			}
+		String[] metrics = result.metrics.split("\n");
+		if (metrics.length < 2)
+			return ;
+
+		try {
+			result.timeUsed = (int)(1000 * Double.parseDouble(metrics[0]));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
 		}
-		else {
-			for (String s : lines) {
-				if (s.contains("user")) {
-					result.timeUsed = (int)(1000 * Double.parseDouble(s.substring(s.lastIndexOf('m') + 1, s.lastIndexOf('s'))));
-				}
-			}
+
+		try {
+			result.memoryUsed = (int)(Double.parseDouble(metrics[1]));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
 		}
 	}
 }

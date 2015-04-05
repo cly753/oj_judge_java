@@ -133,7 +133,7 @@ public class Problem {
     public String toString() {
         String ret = "Problem...\nid = " + id + "\nspecialJudge = " + specialJudge;
         ret += "\nresourcesHash: " + resourcesHash;
-        ret += "\ntimeLimit = " + timeLimit + "\nmemoryLimit = " + memoryLimit + "\ntotalCase = " + totalCase;
+        ret += "\ntimeLimit = " + timeLimit + " ms\nmemoryLimit = " + memoryLimit + " KBytes\ntotalCase = " + totalCase;
         for (int i = 0; i < input.size(); i++) {
             ret += "\n\tCase " + i + ": ";
             ret += "\n\t\t[input ]\n" + input.get(i);

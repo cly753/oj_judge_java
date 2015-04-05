@@ -1,5 +1,6 @@
 package oj.judge.center;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -50,6 +51,7 @@ public class Center extends Thread {
             public void call() {
             	if (Conf.debug()) System.out.println(label + "Callback Runner.E.FINISH");
             	if (Conf.debug()) System.out.println(label + o);
+                if (Conf.debug()) System.out.println(label + ((Solution)o).getResultJson());
             }
         });
 

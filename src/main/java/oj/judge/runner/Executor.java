@@ -17,12 +17,11 @@ public class Executor {
     private Path stdin;
     private Path stdout;
     private Path stderr;
-    private Path timeout;
-    private Path memoryout;
+    private Path metricsFile;
 
     public Result.Verdict quickVerdict;
 
-    public Executor(int a, int b, int c, Path d, Path e, Path f, Path g, Path h, Path i) {
+    public Executor(int a, int b, int c, Path d, Path e, Path f, Path g, Path h) {
 
         language = a;
         timeLimit = b;
@@ -31,15 +30,14 @@ public class Executor {
         stdin = e;
         stdout = f;
         stderr = g;
-        timeout = h;
-        memoryout = i;
+        metricsFile = h;
 
         quickVerdict = Result.Verdict.NONE;
 
     }
 
     public Result.Verdict execute() {
-        ProcessBuilder pb = getProcessBuilder(language, stdin, stdout, stderr, timeout);
+        ProcessBuilder pb = getProcessBuilder(language, stdin, stdout, stderr, metricsFile);
         assert pb != null;
 
         if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
@@ -60,7 +58,7 @@ public class Executor {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(timeLimit + Conf.timeOut());
+                        Thread.sleep(timeLimit + Conf.maxExtraTime());
                         handle.interrupt();
                     } catch (InterruptedException ignored) {
 
@@ -125,8 +123,20 @@ public class Executor {
                 input.toAbsolutePath().toString(),
                 output.toAbsolutePath().toString(),
                 error.toAbsolutePath().toString(),
-                metrics.toAbsolutePath().toString(),
-                "" + (Conf.outputLimit() / 1024)
+                metricsFile.toAbsolutePath().toString(),
+                "" + Conf.outputLimit(),
+                "" + (timeLimit + Conf.maxExtraTime()),
+                "" + Conf.maxMemory()
         );
+
+//        EXE=$1
+//        INFILE=$2
+//        OUTFILE=$3
+//        ERRORFILE=$4
+//        METRICSFILE=$5
+//        MAXFILE=$6
+//        MAXTIME=$7
+//        MAXMEMORY=$8
+
     }
 }

@@ -31,7 +31,7 @@ public class Runner extends Thread {
 	@Override
 	public void run() {
 		if (runningPath.toFile().exists())
-			cleanUp(runningPath);
+			delete(runningPath.toFile());
 		runningPath.toFile().mkdir();
 
 		if (solution.problem.totalCase == 0) {
@@ -43,16 +43,18 @@ public class Runner extends Thread {
 		compile();
 		if (result.verdict == Result.Verdict.NONE) {
 			for (int i = 0; i < solution.problem.totalCase; i++) {
+				result = new Result();
 				solution.result.add(result);
 
 				judge(i);
 				if (solution.result.get(0).verdict != Result.Verdict.AC)
 					break;
-
-				result = new Result();
 			}
 		}
-		cleanUp(runningPath);
+		else {
+			solution.result.add(result);
+		}
+		delete(runningPath.toFile());
 		emit(E.FINISH, solution);
 	}
 
@@ -64,17 +66,11 @@ public class Runner extends Thread {
 	public Path executable;
 	public Path securityPolicy;
 
-	public long timeOut;
-	public int outputLimit;
-
 	public Runner(Integer i, Path savePath, Solution sol) {
 		id = i;
 		listener = new HashMap<>();
 
 		solution = sol;
-
-		timeOut = Conf.timeOut();
-		outputLimit = Conf.outputLimit();
 
 		runningPath = Paths.get(savePath + "/" + sol.id);
 		executable = Paths.get(runningPath + "/" + Conf.compileName());
@@ -88,19 +84,13 @@ public class Runner extends Thread {
 	public void judge(int caseNo) {
 		Path casePath = Paths.get(runningPath + "/" + (1 + caseNo));
 		if (casePath.toFile().exists())
-			cleanUp(casePath);
+			delete(casePath.toFile());
 		casePath.toFile().mkdir();
 
 		Path input = Paths.get(   casePath + "/input"   );
 		Path output = Paths.get(  casePath + "/output"  );
 		Path error = Paths.get(   casePath + "/error"   );
-		Path metrics = Paths.get( casePath + "/metrics" );
-
-		//EXE=$1
-		//INFILE=$2
-		//OUTFILE=$3
-		//ERRORFILE=$4
-		//TIMEOUT=$5
+		Path metricsFile = Paths.get( casePath + "/metrics" );
 
 		if (!solution.problem.saveInput(caseNo, input)) {
 			result.verdict = Result.Verdict.JE;
@@ -110,7 +100,7 @@ public class Runner extends Thread {
 		try {
 			output.toFile().createNewFile();
 			error.toFile().createNewFile();
-			metrics.toFile().createNewFile();
+			metricsFile.toFile().createNewFile();
 		} catch (IOException e) {
 			e.printStackTrace();
 			result.verdict = Result.Verdict.JE;
@@ -125,8 +115,7 @@ public class Runner extends Thread {
 				input,
 				output,
 				error,
-				metrics,
-				metrics
+				metricsFile
 		).execute();
 
 		if (result.verdict != Result.Verdict.NONE) {
@@ -134,8 +123,8 @@ public class Runner extends Thread {
 		}
 
 		if (Conf.debug()) System.out.println(label + "output size = " + output.toFile().length());
-		if (Conf.debug()) System.out.println(label + "error size = " + error.toFile().length());
-		if (output.toFile().length() >= outputLimit || error.toFile().length() >= outputLimit) {
+		if (Conf.debug()) System.out.println(label + "error  size = " + error.toFile().length());
+		if (output.toFile().length() >= Conf.outputLimit() || error.toFile().length() >= Conf.outputLimit()) {
 			result.verdict = Result.Verdict.OL;
 			return ;
 		}
@@ -152,7 +141,12 @@ public class Runner extends Thread {
 		try {
 			result.output = new String(Files.readAllBytes(output), charset);
 			result.error = new String(Files.readAllBytes(error), charset);
-			result.metrics = new String(Files.readAllBytes(metrics), charset);
+			result.metrics = new String(Files.readAllBytes(metricsFile), charset);
+
+			if (result.metrics.contains("Command terminated by signal")) {
+				result.verdict = Result.Verdict.RE;
+				return ;
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			result.verdict = Result.Verdict.JE;
@@ -186,18 +180,33 @@ public class Runner extends Thread {
 					compileOut.toAbsolutePath(),
 					compileError.toAbsolutePath()
 			);
-			if (!ok)
+			if (!ok) {
 				result.verdict = Result.Verdict.CE;
+
+				Charset charset;
+				if (Conf.debug()) System.out.println(System.getProperty("os.name"));
+				if (System.getProperty("os.name").contains("Windows")) {
+					charset = Charset.forName("utf-16"); // "windows-1252"
+				}
+				else {
+					charset = Charset.defaultCharset();
+				}
+
+				try {
+					result.compileOut = new String(Files.readAllBytes(compileOut), charset);
+					result.compileError = new String(Files.readAllBytes(compileError), charset);
+				} catch (IOException e) {
+					e.printStackTrace();
+					result.verdict = Result.Verdict.JE;
+					return ;
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			result.verdict = Result.Verdict.JE;
 		}
 	}
 
-	public void cleanUp(Path path) {
-		for (File f : path.toFile().listFiles())
-			delete(f);
-	}
 	public void delete(File f) {
 		if (f.isDirectory())
 			for (File ff : f.listFiles()) {

@@ -1,16 +1,22 @@
 #!/bin/bash
 
+# memory (kbytes)
+
 EXE=$1
 INFILE=$2
 OUTFILE=$3
 ERRORFILE=$4
-TIMEOUT=$5
-OUTPUTLIMIT=$6
-TIMELIMIT=$7
+METRICSFILE=$5
+MAXFILE=$6
+MAXTIME=$7
+MAXMEMORY=$8
 
-"" > ${OUTPATH}/exeOutput
-"" > ${OUTPATH}/exeError
+ulimit -f ${MAXFILE}
+ulimit -m ${MAXMEMORY}
 
-ulimit -f $6
+#
+# TODO
+# record ulimit violation
+# 
 
-{ time ${EXE} 0< ${INFILE} 1> ${OUTFILE} 2> ${ERRORFILE} ; } 2> ${TIMEOUT}
+/usr/bin/time -o ${METRICSFILE} -f "%U\n%M" ${EXE} 0< ${INFILE} 1> ${OUTFILE} 2> ${ERRORFILE}

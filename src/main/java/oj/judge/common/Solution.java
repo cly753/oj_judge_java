@@ -4,12 +4,12 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -30,9 +30,8 @@ public class Solution {
     // Used by judge
     public int language;
 //    public final String codeClass = "Main";
-//    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
-    public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { int a, b; cin >> a >> b; a += b; for (int i = 0; i < 1; i++) if (a < 10) cout << a << endl; else cout << a << endl; return 0; }";
-    
+    public String code;
+
     // Used by judge
     public Date receiveTime;
     public Date judgeTime;
@@ -48,10 +47,12 @@ public class Solution {
 //		String ret = "Solution " + id + ":";
 		for (int i = 0; i < result.size(); i++) {
 			ret += "\n\tresult-" + i + ": " + Formatter.toString(result.get(i).verdict);
+			ret += "\n\t\t[compile output]\n" + result.get(i).compileOut;
+			ret += "\n\t\t[compile error ]\n" + result.get(i).compileError;
 			ret += "\n\t\t[output]\n" + result.get(i).output;
 			ret += "\n\t\t[error ]\n" + result.get(i).error;
-			ret += "\n\t\t[ time ] " + result.get(i).timeUsed;
-			ret += "\n\t\t[memory] " + result.get(i).memoryUsed;
+			ret += "\n\t\t[ time ] " + result.get(i).timeUsed + " ms";
+			ret += "\n\t\t[memory] " + result.get(i).memoryUsed + " KBytes";
 		}
 		return ret;
 	}
@@ -84,9 +85,15 @@ public class Solution {
 
 		Result finalResult = new Result();
 		finalResult.verdict = Result.Verdict.AC;
+		String detail = "Your solution is awesome!";
 		for (Result r : result) {
 			if (r.verdict != Result.Verdict.AC) {
 				finalResult = r;
+				detail = "Almost there!";
+
+				if (r.verdict == Result.Verdict.CE) {
+					detail = r.compileError;
+				}
 				break;
 			}
 			finalResult.timeUsed = Math.max(finalResult.timeUsed, r.timeUsed);
@@ -95,7 +102,7 @@ public class Solution {
 		j.put("result", finalResult.toInt());
 		j.put("time", finalResult.timeUsed);
 		j.put("memory", finalResult.memoryUsed);
-		j.put("detail", "Your solution is awesome!");
+		j.put("detail", detail);
 
 		return j;
 	}
@@ -106,7 +113,7 @@ public class Solution {
 		
 		Problem problem = new Problem(0L, "", null);
 		problem.timeLimit = 1;
-		problem.memoryLimit = 100;
+		problem.memoryLimit = 1024;
 		problem.input = new ArrayList<>();
 		problem.output = new ArrayList<>();
 		problem.input.add("1 2");
@@ -120,6 +127,13 @@ public class Solution {
 		solution.problem = problem;
 		solution.receiveTime = new Date();
 		solution.judgeTime = new Date();
+
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(Paths.get("./test/main.cpp").toFile()));
+			solution.code = ""; String s; while ((s = br.readLine()) != null) solution.code += s + "\n";
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		return solution;
 	}

@@ -5,7 +5,10 @@ import org.json.JSONObject;
 public class Result {
     public enum Verdict { NONE, QU, AC, PE, WA, CE, RE, TL, ML, OL, SE, RF, CJ, JE };
 
-    public JSONObject runnerResult; // for wrapper class
+//    public JSONObject runnerResult; // for wrapper class
+
+    public String compileOut;
+    public String compileError;
     public String output; // standard out of solution
     public String error; // standard error of solution
     public String metrics;
@@ -16,7 +19,8 @@ public class Result {
     public int memoryUsed;
 
     public Result() {
-        runnerResult = new JSONObject();
+        compileOut = "";
+        compileError = "";
         output = "";
         error = "";
         metrics = "";

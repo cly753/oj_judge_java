@@ -42,7 +42,7 @@ public class SecureRunner {
 		try {
 			startTimeNanoSecond  = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;
 
-			Main.main(new String[0]);
+//			Main.main(new String[0]);
 
 			endTimeNanoSecond    = bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : 0L;
 			result = "{\"TIME\":" + String.valueOf(endTimeNanoSecond - startTimeNanoSecond) + "}";

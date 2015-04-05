@@ -45,8 +45,11 @@ public class Conf {
 		return conf.getInt("buffer_size");
 	}
 	
-	public static int timeOut() {
-		return conf.getInt("time_out");
+	public static int maxExtraTime() {
+		return conf.getInt("max_time");
+	}
+	public static int maxMemory() {
+		return conf.getInt("max_memory");
 	}
 	
 	public static Path securityPolicyFile() {
