@@ -1,12 +1,15 @@
 package oj.judge.center;
 
+import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
+import oj.judge.common.Problem;
 import oj.judge.common.Solution;
 import oj.judge.remote.Remote;
 import oj.judge.runner.Runner;
@@ -26,25 +29,27 @@ public class Center extends Thread {
     		return ;
 
 //        Remote remote = new Remote(Conf.fetchInterval());
-//        Solution solution = new Solution();
 //        try {
-//            remote.judgeFetchSolution(solution);
+//            byte[] raw = remote.getProblemResourcesZip(1L);
+//
+//            Problem problem = new Problem(1L, "", raw);
+//            System.out.println(problem);
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
+
 //        System.out.println(solution);
 
-
         Integer id = 0;
-    	Path runningPath = Conf.runningPath();
-        Runner r = new Runner(id, runningPath, Solution.getFakeSolution());
+    	Path savePath = Conf.runningPath();
+        Runner r = new Runner(id, savePath, Solution.getFakeSolution());
 
         r.setName("Runner-" + id);
         r.reg(Runner.E.FINISH, new Callback() {
             @Override
             public void call() {
             	if (Conf.debug()) System.out.println(label + "Callback Runner.E.FINISH");
-            	if (Conf.debug()) System.out.println(label + (Solution)o);
+            	if (Conf.debug()) System.out.println(label + o);
             }
         });
 

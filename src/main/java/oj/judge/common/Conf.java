@@ -2,8 +2,6 @@ package oj.judge.common;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -57,7 +55,7 @@ public class Conf {
 
 	public static String getRemoteSocket() {
 		return conf.getString("remote_socket");
-	};
+	}
 
 	public static String judgeAccessName() {
 		return conf.getString("judgeAccessName");
@@ -89,7 +87,7 @@ public class Conf {
 			e.printStackTrace();
 		}
 		return null;
-	};
+	}
 	public static URL getProblemResourcesZip(long id) {
 		try {
 			return new URL(getRemoteSocket() + conf.getString("getProblemResourcesZip").replace(":id", "" + id));
@@ -97,7 +95,7 @@ public class Conf {
 			e.printStackTrace();
 		}
 		return null;
-	};
+	}
 
 	public static Path compileScript() {
 		return Paths.get(conf.getString("compile_script"));

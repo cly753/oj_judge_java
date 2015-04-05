@@ -3,9 +3,6 @@ package oj.judge.runner;
 import oj.judge.common.Conf;
 import oj.judge.common.Result;
 
-/**
- * Created by t_chenli on 3/27/2015.
- */
 public class Checker {
 	public static final String label = "Checker::";
 	
@@ -65,14 +62,14 @@ public class Checker {
 		if (System.getProperty("os.name").contains("Windows")) {
 			for (String s : lines) {
 				if (s.contains("TotalSeconds")) {
-					result.timeUsed = Double.parseDouble(s.split(":")[1]);
+					result.timeUsed = (int)(1000 * Double.parseDouble(s.split(":")[1]));
 				}
 			}
 		}
 		else {
 			for (String s : lines) {
 				if (s.contains("user")) {
-					result.timeUsed = Double.parseDouble(s.substring(s.lastIndexOf('m') + 1, s.lastIndexOf('s')));
+					result.timeUsed = (int)(1000 * Double.parseDouble(s.substring(s.lastIndexOf('m') + 1, s.lastIndexOf('s'))));
 				}
 			}
 		}

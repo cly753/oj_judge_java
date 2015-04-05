@@ -7,9 +7,6 @@ import java.nio.file.Paths;
 import oj.judge.common.Conf;
 import oj.judge.common.Solution;
 
-/**
- * Created by t_chenli on 3/30/2015.
- */
 public class Compiler {
     public static boolean compile(int language, Path source, Path out, Path compileOut, Path compileError) throws IOException {
         String scriptPath = Conf.compileScript().toAbsolutePath().toString();
@@ -46,10 +43,7 @@ public class Compiler {
 		try {
 			int returnCode = p.waitFor();
 
-	        if (returnCode == 0)
-	            return true;
-	        else
-	            return false;
+            return returnCode == 0;
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return false;

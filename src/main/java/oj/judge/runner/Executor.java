@@ -7,15 +7,12 @@ import oj.judge.common.Solution;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Created by cly on 4/4/15.
- */
 public class Executor {
     private static final String label = "Executor::";
 
     private int language;
-    private double timeLimit;
-    private double memoryLimit;
+    private int timeLimit;
+    private int memoryLimit;
     private Path exe;
     private Path stdin;
     private Path stdout;
@@ -23,7 +20,9 @@ public class Executor {
     private Path timeout;
     private Path memoryout;
 
-    public Executor(int a, double b, double c, Path d, Path e, Path f, Path g, Path h, Path i) {
+    public Result.Verdict quickVerdict;
+
+    public Executor(int a, int b, int c, Path d, Path e, Path f, Path g, Path h, Path i) {
 
         language = a;
         timeLimit = b;
@@ -35,15 +34,19 @@ public class Executor {
         timeout = h;
         memoryout = i;
 
+        quickVerdict = Result.Verdict.NONE;
+
     }
+
     public Result.Verdict execute() {
         ProcessBuilder pb = getProcessBuilder(language, stdin, stdout, stderr, timeout);
+        assert pb != null;
 
         if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
         if (Conf.debug()) for (String s : pb.command()) System.out.print(s + " ");
         if (Conf.debug()) System.out.println();
 
-        Process p = null;
+        Process p;
         try {
             p = pb.start();
         } catch (IOException e) {
@@ -52,14 +55,14 @@ public class Executor {
         }
 
         try {
-//            final Runner runnerHandle = this;
+            final Thread handle = Thread.currentThread();
             Thread watcher = new Thread() {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep((long) (timeLimit + Conf.timeOut()));
-//                        runnerHandle.interrupt();
-                    } catch (InterruptedException e) {
+                        Thread.sleep(timeLimit + Conf.timeOut());
+                        handle.interrupt();
+                    } catch (InterruptedException ignored) {
 
                     }
                 }

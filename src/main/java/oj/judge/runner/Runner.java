@@ -17,7 +17,7 @@ import oj.judge.common.Solution;
 public class Runner extends Thread {
 	private static final String label = "Runner::";
 
-	public enum E { ERROR, FINISH };
+	public enum E { FINISH, ERROR };
 	public Map<E, Callback> listener;
 
 	public void reg(E e, Callback c) {
@@ -34,15 +34,22 @@ public class Runner extends Thread {
 			cleanUp(runningPath);
 		runningPath.toFile().mkdir();
 
-		result = solution.result.get(0);
+		if (solution.problem.totalCase == 0) {
+			if (Conf.debug()) System.out.println(label + "solution.problem.totalCase == 0");
+			return ;
+		}
+
+		result = new Result();
 		compile();
-		if (solution.result.get(0).verdict == Result.Verdict.NONE) {
+		if (result.verdict == Result.Verdict.NONE) {
 			for (int i = 0; i < solution.problem.totalCase; i++) {
-				result = solution.result.get(i);
+				solution.result.add(result);
 
 				judge(i);
 				if (solution.result.get(0).verdict != Result.Verdict.AC)
 					break;
+
+				result = new Result();
 			}
 		}
 		cleanUp(runningPath);
@@ -60,19 +67,19 @@ public class Runner extends Thread {
 	public long timeOut;
 	public int outputLimit;
 
-	public Runner(Integer id, Path runningPath, Solution solution) {
-		this.id = id;
-		this.listener = new HashMap<E, Callback>();
+	public Runner(Integer i, Path savePath, Solution sol) {
+		id = i;
+		listener = new HashMap<>();
 
-		this.timeOut = Conf.timeOut();
-		this.outputLimit = Conf.outputLimit();
+		solution = sol;
 
-		this.runningPath = Paths.get(runningPath + "/" + solution.id);
-		this.executable = Paths.get(this.runningPath + "/" + Conf.compileName());
+		timeOut = Conf.timeOut();
+		outputLimit = Conf.outputLimit();
 
-		this.securityPolicy = Conf.securityPolicyFile();
+		runningPath = Paths.get(savePath + "/" + sol.id);
+		executable = Paths.get(runningPath + "/" + Conf.compileName());
 
-		this.solution    = solution;
+		securityPolicy = Conf.securityPolicyFile();
 
 		if (!Files.exists(runningPath))
 			runningPath.toFile().mkdirs();
@@ -110,74 +117,20 @@ public class Runner extends Thread {
 			return ;
 		}
 
-		if (false) {
-			Result.Verdict quickVerdict = new Executor(
-					solution.language,
-					solution.problem.timeLimit,
-					solution.problem.memoryLimit,
-					executable,
-					input,
-					output,
-					error,
-					metrics,
-					metrics
-			).execute();
+		result.verdict = new Executor(
+				solution.language,
+				solution.problem.timeLimit,
+				solution.problem.memoryLimit,
+				executable,
+				input,
+				output,
+				error,
+				metrics,
+				metrics
+		).execute();
 
-			if (quickVerdict != Result.Verdict.NONE) {
-				return ;
-			}
-		}
-		else {
-			ProcessBuilder pb = getProcessBuilder(solution.language, input, output, error, metrics);
-
-			if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
-			if (Conf.debug()) for (String s : pb.command()) System.out.print(s + " ");
-			if (Conf.debug()) System.out.println();
-
-			Process p = null;
-			try {
-				p = pb.start();
-			} catch (IOException e) {
-				e.printStackTrace();
-				result.verdict = Result.Verdict.JE;
-				return;
-			}
-
-			try {
-				final Runner runnerHandle = this;
-				Thread watcher = new Thread() {
-					@Override
-					public void run() {
-						try {
-							Thread.sleep((long) (solution.problem.timeLimit + timeOut));
-							runnerHandle.interrupt();
-						} catch (InterruptedException e) {
-							return;
-						}
-					}
-				};
-				watcher.start();
-				p.waitFor();
-				watcher.interrupt();
-			} catch (InterruptedException e) {
-				if (Conf.debug()) System.out.println(label + "Runner interrupted due to timeout.");
-				p.destroyForcibly();
-				try {
-
-					if (System.getProperty("os.name").contains("Windows")) {
-						Runtime.getRuntime().exec("taskkill /F /IM solution.exe");
-					} else {
-
-					}
-
-				} catch (IOException e1) {
-					e1.printStackTrace();
-					result.verdict = Result.Verdict.JE;
-					return;
-				}
-				result.verdict = Result.Verdict.TL;
-				return;
-			}
+		if (result.verdict != Result.Verdict.NONE) {
+			return ;
 		}
 
 		if (Conf.debug()) System.out.println(label + "output size = " + output.toFile().length());
@@ -186,7 +139,6 @@ public class Runner extends Thread {
 			result.verdict = Result.Verdict.OL;
 			return ;
 		}
-
 
 		Charset charset;
 		if (Conf.debug()) System.out.println(System.getProperty("os.name"));
@@ -212,7 +164,7 @@ public class Runner extends Thread {
 
 	public void compile() {
 		Path source = Paths.get(runningPath + "/source");
-		executable = executable;
+//		executable = executable;
 		Path compileOut = Paths.get(runningPath + "/compileOut");
 		Path compileError = Paths.get(runningPath + "/compileError");
 
@@ -240,44 +192,6 @@ public class Runner extends Thread {
 			e.printStackTrace();
 			result.verdict = Result.Verdict.JE;
 		}
-	}
-
-	public ProcessBuilder getProcessBuilder(int language, Path input, Path output, Path error, Path metrics) {
-		String scriptPath = Conf.runScript().toAbsolutePath().toString();
-		String suffixScript;
-		String suffixExe;
-
-		if (Conf.debug()) System.out.println(System.getProperty("os.name"));
-
-		if (System.getProperty("os.name").contains("Windows")) {
-			suffixScript = ".bat";
-			suffixExe = ".exe";
-		}
-		else {
-			suffixScript = ".sh";
-			suffixExe = "";
-		}
-
-		switch (language) {
-			case Solution.CPP:
-				scriptPath = scriptPath + "/CPP" + suffixScript;
-				break;
-			case Solution.JAVA:
-				scriptPath = scriptPath + "/JAVA" + suffixScript;
-				break;
-			default:
-				return null;
-		}
-
-		return new ProcessBuilder(
-				scriptPath,
-				executable.toAbsolutePath().toString() + suffixExe,
-				input.toAbsolutePath().toString(),
-				output.toAbsolutePath().toString(),
-				error.toAbsolutePath().toString(),
-				metrics.toAbsolutePath().toString(),
-				"" + (int)(outputLimit / 1024)
-		);
 	}
 
 	public void cleanUp(Path path) {

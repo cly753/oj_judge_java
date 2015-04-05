@@ -1,13 +1,13 @@
 package oj.judge.common;
 
+import org.json.JSONObject;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
@@ -18,6 +18,8 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 public class Problem {
+    private static final String label = "Problem::";
+
     public Long id;
     public boolean specialJudge = false;
 
@@ -27,55 +29,91 @@ public class Problem {
     public List<String> input;
     public List<String> output;
 
-    public double timeLimit; // in ms. 0 for not specified.
-    public double memoryLimit; // in MB. 0 for not specified.
+    public int timeLimit; // in ms. 0 for not specified.
+    public int memoryLimit; // in MB. 0 for not specified.
 
     public int totalCase;
 
-    public Problem(Long id, byte[] problemResourcesZip, double timeLimit, double memoryLimit, String resourcesHash, boolean specialJudge) {
-        this.id = id;
-        this.problemResourcesZip = problemResourcesZip;
-        this.timeLimit = timeLimit;
-        this.memoryLimit = memoryLimit;
-        this.resourcesHash = resourcesHash;
-        this.specialJudge = specialJudge;
+    public Problem(Long i, String hash, byte[] zip) {
+        id = i;
+        resourcesHash = hash;
+        problemResourcesZip = zip;
+
+        totalCase = 0;
+        timeLimit = 0;
+        memoryLimit = 0;
 
         extract(problemResourcesZip);
     }
 
     private void extract(byte[] problemResourcesZip) {
-        input  = new ArrayList<String>();
-        output = new ArrayList<String>();
-        problemResourcesZip = null;
-        totalCase = 0;
+        if (problemResourcesZip == null)
+            return ;
+        try {
+            Map<String, byte[]> allResource = new HashMap<>();
 
-//        try {
-//            final int BUFFER = 2048;
-//            BufferedOutputStream dest = null;
-//            ByteArrayInputStream bais = new ByteArrayInputStream(problemResourcesZip);
-//            CheckedInputStream checksum = new CheckedInputStream(bais, new Adler32());
-//            ZipInputStream zis = new ZipInputStream(new BufferedInputStream(checksum));
-//            ZipEntry entry;
-//            while((entry = zis.getNextEntry()) != null) {
-//                System.out.println("Extracting: " + entry);
-//                int count;
-//                byte data[] = new byte[BUFFER];
-//                // write the files to the disk
-//                FileOutputStream fos = new FileOutputStream(entry.getName());
-//                dest = new BufferedOutputStream(fos, BUFFER);
-//                while ((count = zis.read(data, 0, BUFFER)) != -1) {
-//                    dest.write(data, 0, count);
-//                }
-//                dest.flush();
-//                dest.close();
-//            }
-//            zis.close();
-//            System.out.println("Checksum: " + checksum.getChecksum().getValue());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//
-//            totalCase = 0;
-//        }
+            final int BUFFER = 2048;
+            ByteArrayInputStream bais = new ByteArrayInputStream(problemResourcesZip);
+            CheckedInputStream checksum = new CheckedInputStream(bais, new Adler32());
+            ZipInputStream zis = new ZipInputStream(new BufferedInputStream(checksum));
+            ZipEntry entry;
+
+            while((entry = zis.getNextEntry()) != null) {
+                System.out.println("Extracting: " + entry);
+                int count;
+                byte data[] = new byte[BUFFER];
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                BufferedOutputStream bos = new BufferedOutputStream(baos, BUFFER);
+                while ((count = zis.read(data, 0, BUFFER)) != -1) {
+                    bos.write(data, 0, count);
+                }
+                bos.flush();
+                bos.close();
+
+                allResource.put(entry.getName(), baos.toByteArray());
+            }
+            zis.close();
+
+            if (Conf.debug()) System.out.println("Checksum: " + checksum.getChecksum().getValue());
+
+            byte[] problemSpecRaw = allResource.get("problem.json");
+            if (problemSpecRaw == null) {
+                totalCase = 0;
+                return ;
+            }
+
+            JSONObject problemSpec = new JSONObject(new String(problemSpecRaw));
+
+            if (Conf.debug()) System.out.println(label + problemSpec.toString());
+
+            totalCase = problemSpec.getInt("numberOfTestCases");
+
+            JSONObject defaultSpec = problemSpec.getJSONObject("default");
+            timeLimit = defaultSpec.getInt("timeLimit");
+            memoryLimit = defaultSpec.getInt("memoryLimit");
+            specialJudge = defaultSpec.getBoolean("specialJudge");
+
+            input = new ArrayList<>(totalCase);
+            output = new ArrayList<>(totalCase);
+
+            for (int i = 0; i < totalCase; i++) {
+                byte[] inRaw = allResource.get((i + 1) + ".in");
+                byte[] outRaw = allResource.get((i + 1) + ".out");
+
+                if (inRaw == null || outRaw == null) {
+                    totalCase = 0;
+                    return ;
+                }
+
+                input.add(new String(inRaw));
+                output.add(new String(outRaw));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            totalCase = 0;
+        }
     }
 
     public boolean saveInput(int caseNo, Path path) {

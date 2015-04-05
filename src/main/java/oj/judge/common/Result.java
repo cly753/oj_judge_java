@@ -2,9 +2,6 @@ package oj.judge.common;
 
 import org.json.JSONObject;
 
-/**
- * Created by t_chenli on 3/30/2015.
- */
 public class Result {
     public enum Verdict { NONE, QU, AC, PE, WA, CE, RE, TL, ML, OL, SE, RF, CJ, JE };
 
@@ -15,14 +12,19 @@ public class Result {
 
     public Verdict verdict; //
 
-    public double timeUsed = 0;
-    public double memoryUsed = 0;
+    public int timeUsed;
+    public int memoryUsed;
 
     public Result() {
         runnerResult = new JSONObject();
         output = "";
         error = "";
+        metrics = "";
+
         verdict = Verdict.NONE;
+
+        timeUsed = 0;
+        memoryUsed = 0;
     }
 
     public int toInt() {

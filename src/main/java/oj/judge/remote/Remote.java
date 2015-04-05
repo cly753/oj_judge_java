@@ -5,6 +5,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -18,8 +20,8 @@ import org.json.JSONObject;
 public class Remote extends Thread {
 	private static final String label = "Remote::";
 	
-	public enum E { NEWPROBLEM, ERROR };
-	public Map<E, Callback> listener = new HashMap<E, Callback>();;
+	public enum E { NEWPROBLEM, ERROR }
+	public Map<E, Callback> listener = new HashMap<>();
 	
 	public void reg(E e, Callback c) {
 		listener.put(e, c);
@@ -40,12 +42,17 @@ public class Remote extends Thread {
 		try {
 			judgeFetchSolution(solution);
 			getProblemResourcesHash(solution);
-			getProblemResourcesZip(solution);
+			solution.problem.problemResourcesZip = getProblemResourcesZip(solution.problemId);
+
+			if (Conf.debug()) {
+				Path zipPath = Paths.get(Conf.runningPath() + "/" + solution.id + "/resource.zip");
+				FileOutputStream fos = new FileOutputStream(zipPath.toFile());
+				fos.write(solution.problem.problemResourcesZip);
+				fos.close();
+			}
+
 			solution.receiveTime = new Date();
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-			solution = null;
-		} catch (UnsupportedEncodingException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			solution = null;
 		}
@@ -59,14 +66,17 @@ public class Remote extends Thread {
 		JSONObject data = new JSONObject();
 		data.put("languages", Arrays.asList("20"));
 
-		HashMap<String, String> header = new HashMap<String, String>();
+		HashMap<String, String> header = new HashMap<>();
 		header.put("Content-type", "application/json");
 		byte[] raw = post(Conf.judgeFetchSolution(), data.toString(), header);
 
 		if (Conf.debug()) System.out.println(label + "judgeFetchSolution: " + new String(raw));
 
+		if (raw == null) {
+			solution = null;
+			return ;
+		}
 		JSONObject res = new JSONObject(new String(raw));
-		int resStatus = res.getInt("status");
 		JSONObject resData = res.getJSONObject("data");
 		if (res.has("message"))
 			solution = null;
@@ -79,28 +89,18 @@ public class Remote extends Thread {
 		}
 	}
 
-	public void getProblemResourcesHash(Solution solution) throws MalformedURLException {
-		if (solution == null)
-			return ;
+	public void getProblemResourcesHash(Solution solution) {
+
 	}
 
-	public void getProblemResourcesZip(Solution solution) throws MalformedURLException {
-		if (solution == null)
-			return ;
-
-		byte[] raw = post(Conf.getProblemResourcesZip(solution.problem.id), null, null);
-		if (raw == null)
-			solution = null;
-		else
-			solution.problem.problemResourcesZip = raw;
+	public byte[] getProblemResourcesZip(long problemId) throws IOException {
+		return post(Conf.getProblemResourcesZip(problemId), null, null);
 	}
 
 	public boolean pushSolution(Solution solution) {
 		try {
 			return handleJudgeUpdateResult(solution);
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		} catch (MalformedURLException e) {
+		} catch (UnsupportedEncodingException | MalformedURLException e) {
 			e.printStackTrace();
 		}
 		return false;
@@ -110,7 +110,7 @@ public class Remote extends Thread {
 		JSONObject toPush = solution.getResultJson();
 		if (Conf.debug()) System.out.println(label + "toPush: " + toPush.toString());
 
-		HashMap<String, String> header = new HashMap<String, String>();
+		HashMap<String, String> header = new HashMap<>();
 		header.put("Content-type", "application/json");
 		JSONObject res = new JSONObject(new String(post(Conf.handleJudgeUpdateResult(), URLEncoder.encode(toPush.toString(), "UTF-8"), header)));
 
@@ -156,8 +156,6 @@ public class Remote extends Thread {
 			temp = buffer.toByteArray();
 			bis.close(); buffer.close();
 			return temp;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

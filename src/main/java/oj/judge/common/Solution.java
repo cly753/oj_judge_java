@@ -29,16 +29,16 @@ public class Solution {
 	
     // Used by judge
     public int language;
-    public final String codeClass = "Main";
+//    public final String codeClass = "Main";
 //    public String code = "public class Main { public static void main(String[] args) { System.out.println(\"hello judge!\"); } }";
-    public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { int a, b; cin >> a >> b; a += b; for (int i = 0; i < 1; i++) cout << a << endl; return 0; }";
+    public String code = "#include <iostream> \n using namespace std; int main(int arg, char* args[]) { int a, b; cin >> a >> b; a += b; for (int i = 0; i < 1; i++) if (a < 10) cout << a << endl; else cout << a << endl; return 0; }";
     
     // Used by judge
     public Date receiveTime;
     public Date judgeTime;
     
     public Solution() {
-    	result = new ArrayList<Result>();
+    	result = new ArrayList<>();
     }
         
 	public String toString() {
@@ -83,8 +83,7 @@ public class Solution {
 		j.put("id", id);
 
 		Result finalResult = new Result();
-		finalResult.timeUsed = 0;
-		finalResult.memoryUsed = 0;
+		finalResult.verdict = Result.Verdict.AC;
 		for (Result r : result) {
 			if (r.verdict != Result.Verdict.AC) {
 				finalResult = r;
@@ -94,8 +93,8 @@ public class Solution {
 			finalResult.memoryUsed = Math.max(finalResult.memoryUsed, r.memoryUsed);
 		}
 		j.put("result", finalResult.toInt());
-		j.put("time", (int)finalResult.timeUsed * 1000);
-		j.put("memory", (int)finalResult.memoryUsed);
+		j.put("time", finalResult.timeUsed);
+		j.put("memory", finalResult.memoryUsed);
 		j.put("detail", "Your solution is awesome!");
 
 		return j;
@@ -105,7 +104,11 @@ public class Solution {
 		Solution solution = new Solution();
 		solution.language = CPP;
 		
-		Problem problem = new Problem(0L, null, 1, 100, null, false);
+		Problem problem = new Problem(0L, "", null);
+		problem.timeLimit = 1;
+		problem.memoryLimit = 100;
+		problem.input = new ArrayList<>();
+		problem.output = new ArrayList<>();
 		problem.input.add("1 2");
 		problem.output.add("3");
 		problem.input.add("7 7");
@@ -117,9 +120,6 @@ public class Solution {
 		solution.problem = problem;
 		solution.receiveTime = new Date();
 		solution.judgeTime = new Date();
-
-		for (int i = 0; i < problem.totalCase; i++)
-			solution.result.add(new Result());
 
 		return solution;
 	}
