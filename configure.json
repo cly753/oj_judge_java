@@ -9,7 +9,7 @@
 
     "max_time" : 500,
 
-    "max_memory" : 102400,
+    "max_memory" : 409600,
 
     "security_policy_file" : "/home/cly/Desktop/judge/security_policy_file",
 

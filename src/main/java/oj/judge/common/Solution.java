@@ -19,7 +19,7 @@ import org.json.JSONObject;
 public class Solution {
 	private static final String label = "Solution::";
 
-	public static final int CPP = 20;
+	public static final int CPP11 = 20;
 	public static final int JAVA = 30;
 
 	public Long id;
@@ -107,13 +107,13 @@ public class Solution {
 		return j;
 	}
 	
-	public static Solution getFakeSolution() {
+	public static Solution getMockSolution() {
 		Solution solution = new Solution();
-		solution.language = CPP;
+		solution.language = CPP11;
 		
 		Problem problem = new Problem(0L, "", null);
-		problem.timeLimit = 1;
-		problem.memoryLimit = 1024;
+		problem.timeLimit = 1000;
+		problem.memoryLimit = 2048;
 		problem.input = new ArrayList<>();
 		problem.output = new ArrayList<>();
 		problem.input.add("1 2");
@@ -129,7 +129,8 @@ public class Solution {
 		solution.judgeTime = new Date();
 
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(Paths.get("./test/main.cpp").toFile()));
+			String mockSource = "./test/main.cpp";
+			BufferedReader br = new BufferedReader(new FileReader(Paths.get(mockSource).toFile()));
 			solution.code = ""; String s; while ((s = br.readLine()) != null) solution.code += s + "\n";
 		} catch (IOException e) {
 			e.printStackTrace();

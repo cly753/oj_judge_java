@@ -4,8 +4,9 @@ import oj.judge.common.Conf;
 import oj.judge.common.Result;
 import oj.judge.common.Solution;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Executor {
     private static final String label = "Executor::";
@@ -37,7 +38,7 @@ public class Executor {
     }
 
     public Result.Verdict execute() {
-        ProcessBuilder pb = getProcessBuilder(language, stdin, stdout, stderr, metricsFile);
+        ProcessBuilder pb = getProcessBuilder(language);
         assert pb != null;
 
         if (Conf.debug()) System.out.print(label + "ProcessBuilder... ");
@@ -68,6 +69,7 @@ public class Executor {
             watcher.start();
             p.waitFor();
             watcher.interrupt();
+
         } catch (InterruptedException e) {
             if (Conf.debug()) System.out.println(label + "Runner interrupted due to timeout.");
             p.destroyForcibly();
@@ -90,7 +92,7 @@ public class Executor {
         return Result.Verdict.NONE;
     }
 
-    private ProcessBuilder getProcessBuilder(int language, Path input, Path output, Path error, Path metrics) {
+    private ProcessBuilder getProcessBuilder(int language) {
         String scriptPath = Conf.runScript().toAbsolutePath().toString();
         String suffixScript;
         String suffixExe;
@@ -107,10 +109,13 @@ public class Executor {
         }
 
         switch (language) {
-            case Solution.CPP:
+            case Solution.CPP11:
+                exe = Paths.get(exe.toAbsolutePath().toString() + suffixExe);
                 scriptPath = scriptPath + "/CPP" + suffixScript;
                 break;
             case Solution.JAVA:
+                exe = exe.getParent();
+                memoryLimit += 20 * 1024;
                 scriptPath = scriptPath + "/JAVA" + suffixScript;
                 break;
             default:
@@ -119,11 +124,13 @@ public class Executor {
 
         return new ProcessBuilder(
                 scriptPath,
-                exe.toAbsolutePath().toString() + suffixExe,
-                input.toAbsolutePath().toString(),
-                output.toAbsolutePath().toString(),
-                error.toAbsolutePath().toString(),
+                exe.toString(),
+                stdin.toAbsolutePath().toString(),
+                stdout.toAbsolutePath().toString(),
+                stderr.toAbsolutePath().toString(),
                 metricsFile.toAbsolutePath().toString(),
+                "" + timeLimit,
+                "" + memoryLimit,
                 "" + Conf.outputLimit(),
                 "" + (timeLimit + Conf.maxExtraTime()),
                 "" + Conf.maxMemory()
@@ -134,9 +141,11 @@ public class Executor {
 //        OUTFILE=$3
 //        ERRORFILE=$4
 //        METRICSFILE=$5
-//        MAXFILE=$6
-//        MAXTIME=$7
-//        MAXMEMORY=$8
+//        TIMELIMIT=$6
+//        MEMORYLIMIT=$7
+//        MAXFILE=$8
+//        MAXTIME=$9
+//        MAXMEMORY=$10
 
     }
 }

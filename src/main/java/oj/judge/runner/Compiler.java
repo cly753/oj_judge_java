@@ -24,11 +24,14 @@ public class Compiler {
         }
         
         switch (language) {
-            case Solution.CPP:
-                scriptPath = scriptPath + "/CPP" + suffixScript;
+            case Solution.CPP11:
+                scriptPath = scriptPath + "/CPP11" + suffixScript;
                 break;
             case Solution.JAVA:
-                scriptPath = scriptPath + "/JAVA.sh" + suffixScript;
+                scriptPath = scriptPath + "/JAVA" + suffixScript;
+                out = out.getParent();
+
+                if (Conf.debug()) System.out.println(label + "java: out=" + out.toString());
                 break;
             default:
                 return false;
@@ -45,6 +48,9 @@ public class Compiler {
 			int returnCode = p.waitFor();
 
             if (Conf.debug()) System.out.println(label + "returnCode = " + returnCode);
+
+            if (compileOut.toFile().length() > 0 || compileError.toFile().length() > 0)
+                return false;
             return returnCode == 0;
 		} catch (InterruptedException e) {
 			e.printStackTrace();

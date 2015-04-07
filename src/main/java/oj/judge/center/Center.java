@@ -1,20 +1,11 @@
 package oj.judge.center;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.ConcurrentHashMap;
 
 import oj.judge.common.Callback;
 import oj.judge.common.Conf;
-import oj.judge.common.Problem;
 import oj.judge.common.Solution;
-import oj.judge.remote.Remote;
 import oj.judge.runner.Runner;
-import org.json.JSONObject;
 
 public class Center extends Thread {
     private static final String label = "Center::";
@@ -43,7 +34,7 @@ public class Center extends Thread {
 
         Integer id = 0;
     	Path savePath = Conf.runningPath();
-        Runner r = new Runner(id, savePath, Solution.getFakeSolution());
+        Runner r = new Runner(id, savePath, Solution.getMockSolution());
 
         r.setName("Runner-" + id);
         r.reg(Runner.E.FINISH, new Callback() {

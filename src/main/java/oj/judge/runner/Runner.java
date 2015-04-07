@@ -157,7 +157,18 @@ public class Runner extends Thread {
 	}
 
 	public void compile() {
-		Path source = Paths.get(runningPath + "/source");
+		Path source;
+
+		switch (solution.language) {
+			case Solution.CPP11:
+				source = Paths.get(runningPath + "/source");
+				break;
+			case Solution.JAVA:
+				source = Paths.get(runningPath + "/Main.java");
+				break;
+			default:
+				source = Paths.get(runningPath + "/source");
+		}
 //		executable = executable;
 		Path compileOut = Paths.get(runningPath + "/compileOut");
 		Path compileError = Paths.get(runningPath + "/compileError");
